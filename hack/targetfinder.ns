@@ -3,6 +3,8 @@ import { Server } from "scanall.ns"
 export async function main(ns) {
 	ns.disableLog("sleep");
 	ns.disableLog("getHackingLevel");
+	ns.disableLog("getServerMoneyAvailable");
+	ns.disableLog("getServerSecurityLevel");
 	ns.tail();
 	/*
 	Port Mapping:
@@ -43,15 +45,14 @@ export async function main(ns) {
 		while (portData !== "NULL PORT DATA") {
 			portData = JSON.parse(portData);
 			const ord = orderQueue.find(element => element.id === portData.id);
-			if (portData.threads < ord.neededThreads) {
-				if (portData.threads > 0) {
-					ns.print("ID " + ord.id + ": " + "Only " + portData.threads + " of needed " + ord.neededThreads + " were started. Requesting " + (ord.neededThreads - portData.threads));
+			if (portData.startedThreads < ord.neededThreads) {
+				if (portData.startedThreads > 0) {
+					ns.print("ID " + ord.id + ": " + "Only " + portData.startedThreads + " of needed " + ord.neededThreads + " were started. Requesting " + (ord.neededThreads - portData.startedThreads));
 				}
 				let writeCheckSquak = false;
-				let partialOrder = JSON.parse(JSON.stringify(ord));
-				partialOrder.neededThreads -= portData.threads;
+				ord.neededThreads -= portData.startedThreads;
 				while (!writeCheckSquak) {
-					writeCheckSquak = await ns.tryWritePort(1, JSON.stringify(partialOrder));
+					writeCheckSquak = await ns.tryWritePort(1, JSON.stringify(ord));
 					await ns.sleep(5);
 				}
 			} else {
@@ -70,7 +71,14 @@ export async function main(ns) {
 			} else {
 				ns.print("ID " + ord.id + " " + ord.type + " " + ord.target.name + ": Completed.");
 				orderQueue.splice(orderQueue.indexOf(orderQueue.find(element => element.id == portData.id)), 1);
+				let updateSrv = ImportServers.find(function (server) { return server.name === portData.server.name });
+				updateSrv = portData.server;
+				await ns.write("serverlist.txt", JSON.stringify(ImportServers), "w");
+				servers = ImportServers.filter(function (server) {
+					return !exclude.includes(server.name) && !server.name.startsWith("pserv");
+				});
 			}
+
 			portData = ns.readPort(3);
 		}
 		//write a new order
@@ -107,6 +115,8 @@ export async function main(ns) {
 		let threads = 0;
 		let type = "";
 		hackableServers.forEach(server => {
+			server.money = ns.getServerMoneyAvailable(server.name);
+			server.security = ns.getServerSecurityLevel(server.name);
 			let score = (server.maxMoney * weight_maxMoney) + (server.growth * weight_growth);
 			if (score > highScore) {
 				highScore = score;

@@ -34,7 +34,7 @@ export async function main(ns) {
         portData = JSON.parse(portData);
         portData.pids = new Array();
         id = portData.id;
-        let neededThreads = portData.neededThreads;
+        var neededThreads = portData.neededThreads;
         let assignedThreads = 0;
         for (let host of myServers) {
             host.freemem = host.maxRam - ns.getServerUsedRam(host.name);
@@ -94,6 +94,7 @@ export async function main(ns) {
         //report completed tasks
         await CheckCompleted();
 
+		let startingNeed = portData.neededThreads;
         portData.neededThreads = neededThreads;
 
         let taskLoc = tasks.findIndex(element => element.id === portData.id);
@@ -106,14 +107,14 @@ export async function main(ns) {
         //report accepted task
         let squak = new AcceptSquak();
         squak.id = id;
-        squak.threads = assignedThreads;
+        squak.startedThreads = assignedThreads;
         let writeFlag = false;
         while (!writeFlag) {
             writeFlag = await accept.tryWrite(JSON.stringify(squak));
             await ns.sleep(50);
         }
-        if (squak.threads > 0) {
-            ns.print("Squaked accepted task " + squak.id + " with threads: " + squak.threads + "/" + portData.threads+" Needed: "+portData.neededThreads);
+        if (squak.startedThreads > 0) {
+            ns.print("Squaked accepted task " + squak.id + " with threads: " + squak.startedThreads + "/" + startingNeed +" Needed: " +portData.neededThreads);
         }
 
         await ns.sleep(1);
@@ -161,7 +162,7 @@ export async function main(ns) {
 
 class AcceptSquak {
     id = 0;
-    threads = 0;
+    startedThreads = 0;
 }
 class ReturnSquak {
     server = "";
