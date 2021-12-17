@@ -26,19 +26,15 @@ export async function main(ns) {
     }
     while (true) {
         portData = orders.read();
-        let printed = false;
         while (portData === "NULL PORT DATA") {
             await CheckCompleted();
-            if (!printed) {
-                ns.print("Awaiting port data");
-                printed = true;
-            }
             await ns.sleep(3500);
             portData = orders.read();
         }
         portData = JSON.parse(portData);
         portData.pids = new Array();
-        let neededThreads = portData.threads;
+        id = portData.id;
+        let neededThreads = portData.neededThreads;
 
         for (let host of myServers) {
             host.freemem = host.maxRam - ns.getServerUsedRam(host.name);
@@ -49,7 +45,6 @@ export async function main(ns) {
                 continue;
             }
             let availThreads = 0;
-            id = portData.id;
             if (portData.type === "w") {
                 availThreads = Math.floor(host.freemem / weakenSize);
                 if (availThreads > neededThreads) {
@@ -89,23 +84,31 @@ export async function main(ns) {
         });
 
 
+
+        //report completed tasks
+        await CheckCompleted();
+
         portData.neededThreads = neededThreads;
-        tasks.push(portData);
+
+        let taskLoc = tasks.indexOf(element => element.id === portData.id);
+        if (taskLoc >= 0) {
+            tasks.splice(taskLoc, 1, portData);
+        } else {
+            tasks.push(portData);
+        }
 
         //report accepted task
         let squak = new AcceptSquak();
         squak.id = id;
-        squak.threads = portData.threads - neededThreads;
+        squak.threads = portData.threads - portData.neededThreads;
         let writeFlag = false;
         while (!writeFlag) {
             writeFlag = await accept.tryWrite(JSON.stringify(squak));
             await ns.sleep(50);
         }
         if (squak.threads > 0) {
-            ns.print("Squaked task " + squak.id + " with threads: " + squak.threads + "/" + portData.threads);
+            ns.print("Squaked accepted task " + squak.id + " with threads: " + squak.threads + "/" + portData.threads+" Needed: "+portData.neededThreads);
         }
-        //report completed tasks
-        await CheckCompleted();
 
         await ns.sleep(1);
     }
@@ -141,8 +144,8 @@ export async function main(ns) {
                     task.pids.splice(task.pids.indexOf(proc), 1);
                 }
             }
-            if (!anyRunning && task.neededThreads === 0) {
-                ns.print("All threads for this task completed.");
+            if (task.neededThreads === 0 && task.pids.length === 0) {
+                ns.print("All threads for task " + task.id + "completed. Index: " + tasks.indexOf(element => element.id === task.id));
                 tasks.splice(tasks.indexOf(element => element.id === task.id), 1);
             }
         }
