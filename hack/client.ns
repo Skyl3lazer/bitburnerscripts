@@ -1,7 +1,7 @@
 /** @param {NS} ns **/
 export async function main(ns) {
     ns.disableLog("ALL");
-
+    ns.tail();
     var portData;
     var threads;
     var id;
@@ -35,7 +35,7 @@ export async function main(ns) {
         portData.pids = new Array();
         id = portData.id;
         let neededThreads = portData.neededThreads;
-
+        let assignedThreads = 0;
         for (let host of myServers) {
             host.freemem = host.maxRam - ns.getServerUsedRam(host.name);
             if (host.name === "home") {
@@ -52,7 +52,9 @@ export async function main(ns) {
                 }
                 if (availThreads > 0) {
                     neededThreads -= availThreads;
-                    portData.pids.push([host.name, ns.exec("/hack/weaken.ns", host.name, availThreads, portData.target.name), availThreads]);
+                    let pid = ns.exec("/hack/weaken.ns", host.name, availThreads, portData.target.name);
+                    portData.pids.push([host.name, pid, availThreads]);
+                    assignedThreads += availThreads;
                     host.freemem = host.maxRam - (availThreads * weakenSize);
                 }
             } else if (portData.type === "h") {
@@ -63,7 +65,9 @@ export async function main(ns) {
 
                 if (availThreads > 0) {
                     neededThreads -= availThreads;
-                    portData.pids.push([host.name, ns.exec("/hack/hack.ns", host.name, availThreads, portData.target.name), availThreads]);
+                    let pid = ns.exec("/hack/hack.ns", host.name, availThreads, portData.target.name);
+                    portData.pids.push([host.name, pid, availThreads]);
+                    assignedThreads += availThreads;
                     host.freemem = host.maxRam - (availThreads * hackSize);
                 }
             } else if (portData.type === "g") {
@@ -74,7 +78,9 @@ export async function main(ns) {
 
                 if (availThreads > 0) {
                     neededThreads -= availThreads;
-                    portData.pids.push([host.name, ns.exec("/hack/grow.ns", host.name, availThreads, portData.target.name), availThreads]);
+                    let pid = ns.exec("/hack/grow.ns", host.name, availThreads, portData.target.name);
+                    portData.pids.push([host.name, pid, availThreads]);
+                    assignedThreads += availThreads;
                     host.freemem = host.maxRam - (availThreads * growSize);
                 }
             }
@@ -90,7 +96,7 @@ export async function main(ns) {
 
         portData.neededThreads = neededThreads;
 
-        let taskLoc = tasks.indexOf(element => element.id === portData.id);
+        let taskLoc = tasks.findIndex(element => element.id === portData.id);
         if (taskLoc >= 0) {
             tasks.splice(taskLoc, 1, portData);
         } else {
@@ -100,7 +106,7 @@ export async function main(ns) {
         //report accepted task
         let squak = new AcceptSquak();
         squak.id = id;
-        squak.threads = portData.threads - portData.neededThreads;
+        squak.threads = assignedThreads;
         let writeFlag = false;
         while (!writeFlag) {
             writeFlag = await accept.tryWrite(JSON.stringify(squak));
@@ -145,8 +151,8 @@ export async function main(ns) {
                 }
             }
             if (task.neededThreads === 0 && task.pids.length === 0) {
-                ns.print("All threads for task " + task.id + "completed. Index: " + tasks.indexOf(element => element.id === task.id));
-                tasks.splice(tasks.indexOf(element => element.id === task.id), 1);
+                ns.print("All threads for task " + task.id + " completed. Index: " + tasks.findIndex(element => element.id === task.id));
+                tasks.splice(tasks.findIndex(element => element.id === task.id), 1);
             }
         }
     }

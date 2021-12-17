@@ -3,6 +3,7 @@ import { Server } from "scanall.ns"
 export async function main(ns) {
 	ns.disableLog("sleep");
 	ns.disableLog("getHackingLevel");
+	ns.tail();
 	/*
 	Port Mapping:
 	Port 1 = Output Order objects
