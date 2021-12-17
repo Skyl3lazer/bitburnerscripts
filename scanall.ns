@@ -5,7 +5,7 @@ export async function main(ns) {
 	var maxDepth = 15;
 
 	var depthOneServers = ns.scan("home");
-	var completedServers = ["home"];
+	var completedServers = [];//["home"];
 	var hasChildServers = depthOneServers.length > 0 ? true : false;
 	var serverIterator = depthOneServers;
 	var currentDepth = 0;
