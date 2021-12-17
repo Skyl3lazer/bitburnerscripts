@@ -98,16 +98,15 @@ export async function main(ns) {
             await ns.sleep(50);
         }
         ns.print("squaked id " + squak.id + " with threads: " + squak.threads + "/" + portData.threads);
-        ns.print(JSON.stringify(tasks));
         //report completed tasks
         for(let task of tasks){
-            ns.print(JSON.stringify(task));
             if (task.pids === undefined || task.pids.length === 0) {
-                //return;
+                continue;
             }
             ns.print("checking pids " + task.pids.join());
             let running = false;
-            for (let proc in task.pids) {
+            for (let proc of task.pids) {
+                ns.print(JSON.stringify(proc));
                 if (ns.isRunning(proc[1], proc[2])) {
                     running = true;
                     ns.print("pid " + proc[1] + " " + proc[2])
