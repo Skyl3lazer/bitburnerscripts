@@ -61,8 +61,10 @@ export async function main(ns) {
 			portData = JSON.parse(portData);
 			const ord = orderQueue.find(element => element.id == portData.id);
 			if (portData.threads < ord.threads) {
+				ns.print("ID "+ord.id(": Completed "+portData.threads+" of "+ord.threads+" threads."));
 				ord.threads -= portData.threads;
 			} else {
+				ns.print("ID "+ord.id(": Completed."));
 				orderQueue.splice(orderQueue.indexOf(orderQueue.find(element => element.id == portData.id)), 1);
 			}
 			portData = ns.readPort(3);

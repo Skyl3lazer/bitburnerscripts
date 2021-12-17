@@ -9,7 +9,7 @@ export async function main(ns) {
     let orders = ns.getPortHandle(1);
     let accept = ns.getPortHandle(2);
     let output = ns.getPortHandle(3);
-    let tasks = [];
+    let tasks = new Array();
 
     //script sizes
     let hackSize = 1.7;
@@ -29,13 +29,11 @@ export async function main(ns) {
         portData = orders.read();
         while (portData === "NULL PORT DATA") {
             ns.print("Awaiting port data");
-            await ns.sleep(5000);
+            await ns.sleep(3500);
             portData = orders.read();
         }
-        ns.print("data: " + portData);
         portData = JSON.parse(portData);
         portData.pids = new Array();
-        ns.print(portData);
         let neededThreads = portData.threads;
 
         for (let host of myServers) {
@@ -100,11 +98,12 @@ export async function main(ns) {
             await ns.sleep(50);
         }
         ns.print("squaked id " + squak.id + " with threads: " + squak.threads + "/" + portData.threads);
-        
+        ns.print(JSON.stringify(tasks));
         //report completed tasks
-        for (let task in tasks) {
+        for(let task of tasks){
+            ns.print(JSON.stringify(task));
             if (task.pids === undefined || task.pids.length === 0) {
-                continue;
+                //return;
             }
             ns.print("checking pids " + task.pids.join());
             let running = false;
