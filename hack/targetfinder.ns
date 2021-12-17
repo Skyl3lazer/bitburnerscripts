@@ -111,7 +111,6 @@ export async function main(ns) {
 				highScore = score;
 				highTarget = server;
 			}
-			ns.print(server.name + " scored " + score);
 		});
 		if (highTarget.name === undefined) {
 			return Promise.resolve("NO ORDER");

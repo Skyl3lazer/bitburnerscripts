@@ -89,6 +89,7 @@ export async function main(ns) {
         });
 
         if (portData.threads - neededThreads !== 0) {
+            portData.neededThreads = neededThreads;
             tasks.push(portData);
         }
 
@@ -120,7 +121,7 @@ export async function main(ns) {
                     running = true;
                 }
             }
-            if (!running) {
+            if (!running && task.neededThreads === 0) {
                 let compSquak = new ReturnSquak();
                 task.target.growTime = ns.getGrowTime(task.target.name);
                 task.target.weakenTime = ns.getWeakenTime(task.target.name);
@@ -136,7 +137,7 @@ export async function main(ns) {
                     await ns.sleep(50);
                 }
                 ns.print("Squaked task " + compSquak.id + " completed.");
-                tasks.splice(tasks.find(element => element.id === task.id), 1);
+                tasks.splice(tasks.indexOf(element => element.id === task.id), 1);
             }
         }
     }
