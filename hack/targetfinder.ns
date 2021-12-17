@@ -45,7 +45,7 @@ export async function main(ns) {
 			const ord = orderQueue.find(element => element.id === portData.id);
 			if (portData.threads < ord.neededThreads) {
 				if (portData.threads > 0) {
-					ns.print("ID " + ord.id + ": " + "Only " + portData.threads + " of needed " + ord.neededThreads + " were started. Requesting " + (ord.neededThreads-portData.threads));
+					ns.print("ID " + ord.id + ": " + "Only " + portData.threads + " of needed " + ord.neededThreads + " were started. Requesting " + (ord.neededThreads - portData.threads));
 				}
 				let writeCheckSquak = false;
 				let partialOrder = JSON.parse(JSON.stringify(ord));
@@ -66,7 +66,7 @@ export async function main(ns) {
 			const ord = orderQueue.find(element => element.id === portData.id);
 			if ((ord.neededThreads - portData.threads) !== 0) {
 				ord.neededThreads -= portData.threads;
-				ns.print("ID " + ord.id + " " + ord.type + " " + ord.target.name + ": Completed " + ord.neededThreads + " of " + ord.threads + " threads.");
+				ns.print("ID " + ord.id + " " + ord.type + " " + ord.target.name + ": Completed " + (ord.threads - ord.neededThreads) + " of " + ord.threads + " threads.");
 			} else {
 				ns.print("ID " + ord.id + " " + ord.type + " " + ord.target.name + ": Completed.");
 				orderQueue.splice(orderQueue.indexOf(orderQueue.find(element => element.id == portData.id)), 1);
