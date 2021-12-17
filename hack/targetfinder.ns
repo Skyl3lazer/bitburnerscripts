@@ -16,8 +16,8 @@ export async function main(ns) {
 	//Configuration
 	var weight_maxMoney = 10;
 	var weight_growth = 2000000;
-	var securityThresh = 3; //Don't hack if security is below this threshhold
-	var moneyThresh = .65; //Don't hack if money is below maxMoney * moneyThresh
+	var securityThresh = 0; //Don't hack if security is below this threshhold (plus base min)
+	var moneyThresh = .85; //Don't hack if money is below maxMoney * moneyThresh
 	var maxConcurrent = 4; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
 	//End Configuration
 
@@ -83,7 +83,7 @@ export async function main(ns) {
 		}
 		await ns.write("orderqueue.txt", JSON.stringify(orderQueue), "w");
 		await ns.write("serverlist.txt", JSON.stringify(ImportServers), "w");
-		await ns.sleep(5000);
+		await ns.sleep(3000);
 	}
 
 	//Determine the order to send next
