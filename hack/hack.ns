@@ -1,0 +1,11 @@
+/** @param {NS} ns **/
+//hacks a target
+export async function main(ns) {
+	let target = ns.args[0];
+	let amount = await ns.hack(target);
+	if (amount > 0) {
+		ns.toast("Hacked " + ns.nFormat(amount, "$0") + " from " + target+"!");
+	} else if (amount ===0){
+		ns.toast("Hack failed on "+target+"!");
+	}
+}
