@@ -18,7 +18,7 @@ export async function main(ns) {
 	var weight_growth = 2000000;
 	var securityThresh = 0; //Don't hack if security is below this threshhold (plus base min)
 	var moneyThresh = .85; //Don't hack if money is below maxMoney * moneyThresh
-	var maxConcurrent = 4; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
+	var maxConcurrent = 3; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
 	//End Configuration
 
 	var ImportServers = JSON.parse(ns.read("serverlist.txt"));
@@ -40,7 +40,7 @@ export async function main(ns) {
 		let portData = ns.readPort(2);
 		while (portData !== "NULL PORT DATA") {
 			portData = JSON.parse(portData);
-			const ord = orderQueue.find(element => element.id == portData.id);
+			const ord = orderQueue.find(element => element.id === portData.id);
 			if (portData.threads < ord.threads) {
 				if (portData.threads > 0) {
 					ns.print("ID " + ord.id + ": " + "Only " + portData.threads + " of " + ord.threads + " were started. Requesting " + (ord.threads - portData.threads));
@@ -53,7 +53,7 @@ export async function main(ns) {
 					await ns.sleep(5);
 				}
 			} else {
-				ns.print("ID " + ord.id + ": Running on " + ord.threads + " threads.");
+				ns.print("ID " + ord.id + " " + ord.type + " " + ord.target.name + ": Running on " + ord.threads + " threads.");
 			}
 			portData = ns.readPort(2);
 		}
@@ -61,12 +61,13 @@ export async function main(ns) {
 		portData = ns.readPort(3);
 		while (portData !== "NULL PORT DATA") {
 			portData = JSON.parse(portData);
-			const ord = orderQueue.find(element => element.id == portData.id);
-			if (portData.threads < ord.threads) {
-				ns.print("ID " + ord.id + ": Completed " + portData.threads + " of " + ord.threads + " threads.");
+			const ord = orderQueue.find(element => element.id === portData.id);
+			ns.print("ord threads/port threads: " + ord.threads + "/" + portData.threads);
+			if ((ord.threads - portData.threads) !== 0) {
+				ns.print("ID " + ord.id + " " + ord.type + " " + ord.target.name + ": Completed " + portData.threads + " of " + ord.threads + " threads.");
 				ord.threads -= portData.threads;
 			} else {
-				ns.print("ID " + ord.id(": Completed."));
+				ns.print("ID " + ord.id + " " + ord.type + " " + ord.target.name + ": Completed.");
 				orderQueue.splice(orderQueue.indexOf(orderQueue.find(element => element.id == portData.id)), 1);
 			}
 			portData = ns.readPort(3);
@@ -76,7 +77,7 @@ export async function main(ns) {
 			let order = await determineOrder();
 			if (order !== "NO ORDER") {
 				let writeCheckNew = false;
-				ns.print("Writing Order " + order.id + ": " + order.target.name);
+				ns.print("Writing Order " + order.id + ": " + order.type + " " + order.target.name);
 				while (!writeCheckNew) {
 					writeCheckNew = await ns.tryWritePort(1, JSON.stringify(order));
 					await ns.sleep(5);
@@ -115,7 +116,6 @@ export async function main(ns) {
 		if (highTarget.name === undefined) {
 			return Promise.resolve("NO ORDER");
 		}
-		ns.print("HighTarget is " + highTarget.name);
 		if (highTarget.security > highTarget.minSec + securityThresh) {
 			type = "w";
 			threads = Math.ceil((highTarget.security - (highTarget.minSec + securityThresh)) / 0.05); //0.05 is a static amount reduced per thread

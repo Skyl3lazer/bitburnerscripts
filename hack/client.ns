@@ -57,7 +57,7 @@ export async function main(ns) {
                 }
                 if (availThreads > 0) {
                     neededThreads -= availThreads;
-                    portData.pids.push([host.name, ns.exec("/hack/weaken.ns", host.name, availThreads, portData.target.name)]);
+                    portData.pids.push([host.name, ns.exec("/hack/weaken.ns", host.name, availThreads, portData.target.name), availThreads]);
                     host.freemem = host.maxRam - (availThreads * weakenSize);
                 }
             } else if (portData.type === "h") {
@@ -68,7 +68,7 @@ export async function main(ns) {
 
                 if (availThreads > 0) {
                     neededThreads -= availThreads;
-                    portData.pids.push([host.name, ns.exec("/hack/hack.ns", host.name, availThreads, portData.target.name)]);
+                    portData.pids.push([host.name, ns.exec("/hack/hack.ns", host.name, availThreads, portData.target.name), availThreads]);
                     host.freemem = host.maxRam - (availThreads * hackSize);
                 }
             } else if (portData.type === "g") {
@@ -79,7 +79,7 @@ export async function main(ns) {
 
                 if (availThreads > 0) {
                     neededThreads -= availThreads;
-                    portData.pids.push([host.name, ns.exec("/hack/grow.ns", host.name, availThreads, portData.target.name)]);
+                    portData.pids.push([host.name, ns.exec("/hack/grow.ns", host.name, availThreads, portData.target.name), availThreads]);
                     host.freemem = host.maxRam - (availThreads * growSize);
                 }
             }
@@ -88,10 +88,9 @@ export async function main(ns) {
             return a.freemem - b.freemem;
         });
 
-        if (portData.threads - neededThreads !== 0) {
-            portData.neededThreads = neededThreads;
-            tasks.push(portData);
-        }
+
+        portData.neededThreads = neededThreads;
+        tasks.push(portData);
 
         //report accepted task
         let squak = new AcceptSquak();
@@ -103,7 +102,7 @@ export async function main(ns) {
             await ns.sleep(50);
         }
         if (squak.threads > 0) {
-            ns.print("squaked id " + squak.id + " with threads: " + squak.threads + "/" + portData.threads);
+            ns.print("Squaked task " + squak.id + " with threads: " + squak.threads + "/" + portData.threads);
         }
         //report completed tasks
         await CheckCompleted();
@@ -115,28 +114,35 @@ export async function main(ns) {
             if (task.pids === undefined || task.pids.length === 0) {
                 continue;
             }
-            let running = false;
+            var anyRunning = false;
             for (let proc of task.pids) {
+                let running = false;
                 if (ns.isRunning(proc[1], proc[0])) {
                     running = true;
+                    anyRunning = true;
+                }
+
+                if (!running) {
+                    let compSquak = new ReturnSquak();
+                    task.target.growTime = ns.getGrowTime(task.target.name);
+                    task.target.weakenTime = ns.getWeakenTime(task.target.name);
+                    task.target.hackTime = ns.getHackTime(task.target.name);
+                    task.target.money = ns.getServerMoneyAvailable(task.target.name);
+                    task.target.security = ns.getServerSecurityLevel(task.target.name);
+                    compSquak.server = task.target;
+                    compSquak.id = task.id;
+                    compSquak.threads = proc[2];
+                    let writeFlag = false;
+                    while (!writeFlag) {
+                        writeFlag = await output.tryWrite(JSON.stringify(compSquak));
+                        await ns.sleep(50);
+                    }
+                    ns.print("Squaked task " + compSquak.id + " completed " + proc[2] + " threads on: " + proc[0]);
+                    task.pids.splice(task.pids.indexOf(proc), 1);
                 }
             }
-            if (!running && task.neededThreads === 0) {
-                let compSquak = new ReturnSquak();
-                task.target.growTime = ns.getGrowTime(task.target.name);
-                task.target.weakenTime = ns.getWeakenTime(task.target.name);
-                task.target.hackTime = ns.getHackTime(task.target.name);
-                task.target.money = ns.getServerMoneyAvailable(task.target.name);
-                task.target.security = ns.getServerSecurityLevel(task.target.name);
-                compSquak.server = task.target;
-                compSquak.id = task.id;
-                threads = task.threads;
-                let writeFlag = false;
-                while (!writeFlag) {
-                    writeFlag = await output.tryWrite(JSON.stringify(compSquak));
-                    await ns.sleep(50);
-                }
-                ns.print("Squaked task " + compSquak.id + " completed.");
+            if (!anyRunning && task.neededThreads === 0) {
+                ns.print("All threads for this task completed.");
                 tasks.splice(tasks.indexOf(element => element.id === task.id), 1);
             }
         }
