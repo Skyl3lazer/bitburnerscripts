@@ -63,7 +63,7 @@ export async function main(ns) {
 			if (portData.threads < ord.threads) {
 				ord.threads -= portData.threads;
 			} else {
-				orderQueue.splice(orderQueue.indexOf(ord), 1);
+				orderQueue.splice(orderQueue.indexOf(orderQueue.find(element => element.id == portData.id)), 1);
 			}
 			portData = ns.readPort(3);
 		}
