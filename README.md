@@ -3,6 +3,8 @@ Scripts for BitBurner (Now on steam!)
 
 scanall.ns - Scans the tree of servers and puts their data into serverlist.txt (this will be used as a pseudo DB)
 
+alphanuke.ns - Nukes all available servers every 30s based on what .exe's are available to you. Stops running once they're all hacked.
+
 hack/
 
 ..targetfinder.ns - Main script. Analyzes available hackable targets, sends Orders to port 1. Reads ports 2 and 3 for info on accepted orders and completed orders. Also fires off client.ns

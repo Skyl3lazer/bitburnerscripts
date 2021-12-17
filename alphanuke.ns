@@ -1,0 +1,47 @@
+/** @param {NS} ns **/
+import { Server } from "scanall.ns"
+export async function main(ns) {
+	var maxHack = 0;
+	while (maxHack < 5) {
+		maxHack = 0;
+		if (ns.fileExists("BruteSSH.exe")) maxHack++;
+		if (ns.fileExists("FTPCrack.exe")) maxHack++;
+		if (ns.fileExists("relaySMTP.exe")) maxHack++;
+		if (ns.fileExists("HTTPWorm.exe")) maxHack++;
+		if (ns.fileExists("SQLInject.exe")) maxHack++;
+
+		var ImportServers = JSON.parse(ns.read("serverlist.txt"));
+		var serversToHack = ImportServers.filter(function (server) {
+			return server.portsReq <= maxHack && !server.hasRoot;
+		});
+		let changed = false;
+		serversToHack.forEach(current => {
+			if (maxHack == 5) {
+				ns.sqlinject(current.name);
+			}
+			if (maxHack >= 4) {
+				ns.httpworm(current.name);
+			}
+			if (maxHack >= 3) {
+				ns.relaysmtp(current.name);
+			}
+			if (maxHack >= 2) {
+				ns.ftpcrack(current.name);
+			}
+			if (maxHack >= 1) {
+				ns.brutessh(current.name);
+			}
+			ns.nuke(current.name);
+			current.hasRoot = true;
+			changed = true;
+		});
+		ns.print("Sleeping 30s");
+		if (changed) {
+			await ns.write("serverlist.txt", JSON.stringify(ImportServers));
+			kill("/hack/targetfinder.ns", "home");
+			run("/hack/targetfinder.ns");
+		}
+		await ns.sleep(30000);
+	}
+	ns.print("All servers hacked");
+}
