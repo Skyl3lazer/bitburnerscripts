@@ -18,6 +18,7 @@ export async function main(ns) {
 	var weight_growth = 2000000;
 	var securityThresh = 3; //Don't hack if security is below this threshhold
 	var moneyThresh = .65; //Don't hack if money is below maxMoney * moneyThresh
+	var maxConcurrent = 4; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
 	//End Configuration
 
 	var ImportServers = JSON.parse(ns.read("serverlist.txt"));
@@ -41,7 +42,7 @@ export async function main(ns) {
 			portData = JSON.parse(portData);
 			const ord = orderQueue.find(element => element.id == portData.id);
 			if (portData.threads < ord.threads) {
-				ns.print("Only " + portData.threads + " of " + ord.threads + " were started. Requesting " + (ord.threads - portData.threads));
+				ns.print("ID "+ord.id+": "+"Only " + portData.threads + " of " + ord.threads + " were started. Requesting " + (ord.threads - portData.threads));
 				let writeCheckSquak = false;
 				let partialOrder = JSON.parse(JSON.stringify(ord));
 				partialOrder.threads -= portData.threads;
@@ -49,6 +50,8 @@ export async function main(ns) {
 					writeCheckSquak = await ns.tryWritePort(1, JSON.stringify(partialOrder));
 					await ns.sleep(5);
 				}
+			}else{
+				ns.print("ID "+ord.id+": Running on "+ord.threads+" threads.");
 			}
 			portData = ns.readPort(2);
 		}
@@ -65,19 +68,22 @@ export async function main(ns) {
 			portData = ns.readPort(3);
 		}
 		//write a new order
-		let order = await determineOrder();
-		if (order !== "NO ORDER") {
-			let writeCheckNew = false;
-			ns.print("Writing Order " + order.id + ": " + order.target.name);
-			while (!writeCheckNew) {
-				writeCheckNew = await ns.tryWritePort(1, JSON.stringify(order));
-				await ns.sleep(5);
+		if (orderQueue.length < maxConcurrent) {
+			let order = await determineOrder();
+			if (order !== "NO ORDER") {
+				let writeCheckNew = false;
+				ns.print("Writing Order " + order.id + ": " + order.target.name);
+				while (!writeCheckNew) {
+					writeCheckNew = await ns.tryWritePort(1, JSON.stringify(order));
+					await ns.sleep(5);
+				}
+				orderQueue.push(order);
+				ns.print("Write success");
 			}
-			orderQueue.push(order);
-			ns.print("Write success");
 		}
+		await ns.write("orderqueue.txt", JSON.stringify(orderQueue), "w");
 		await ns.write("serverlist.txt", JSON.stringify(ImportServers), "w");
-		await ns.sleep(10000);
+		await ns.sleep(5000);
 	}
 
 	//Determine the order to send next
@@ -101,9 +107,9 @@ export async function main(ns) {
 				highScore = score;
 				highTarget = server;
 			}
-			ns.print(server.name+" scored "+score);
+			ns.print(server.name + " scored " + score);
 		});
-		if(highTarget.name === undefined){
+		if (highTarget.name === undefined) {
 			return Promise.resolve("NO ORDER");
 		}
 		ns.print("HighTarget is " + highTarget.name);
