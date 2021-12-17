@@ -1,15 +1,14 @@
 /** @param {NS} ns **/
 export async function main(ns) {
-    ns.disableLog("sleep");
-    ns.disableLog("getServerUsedRam");
+    ns.disableLog("ALL");
 
     var portData;
     var threads;
     var id;
-    let orders = ns.getPortHandle(1);
-    let accept = ns.getPortHandle(2);
-    let output = ns.getPortHandle(3);
-    let tasks = new Array();
+    var orders = ns.getPortHandle(1);
+    var accept = ns.getPortHandle(2);
+    var output = ns.getPortHandle(3);
+    var tasks = new Array();
 
     //script sizes
     let hackSize = 1.7;
@@ -27,8 +26,13 @@ export async function main(ns) {
     }
     while (true) {
         portData = orders.read();
+        let printed = false;
         while (portData === "NULL PORT DATA") {
-            ns.print("Awaiting port data");
+            await CheckCompleted();
+            if (!printed) {
+                ns.print("Awaiting port data");
+                printed = true;
+            }
             await ns.sleep(3500);
             portData = orders.read();
         }
@@ -38,7 +42,7 @@ export async function main(ns) {
 
         for (let host of myServers) {
             host.freemem = host.maxRam - ns.getServerUsedRam(host.name);
-            if(host.name==="home"){
+            if (host.name === "home") {
                 host.freemem -= 64;
             }
             if (neededThreads === 0) {
@@ -97,23 +101,26 @@ export async function main(ns) {
             writeFlag = await accept.tryWrite(JSON.stringify(squak));
             await ns.sleep(50);
         }
-        ns.print("squaked id " + squak.id + " with threads: " + squak.threads + "/" + portData.threads);
+        if (squak.threads > 0) {
+            ns.print("squaked id " + squak.id + " with threads: " + squak.threads + "/" + portData.threads);
+        }
         //report completed tasks
-        for(let task of tasks){
+        await CheckCompleted();
+
+        await ns.sleep(1);
+    }
+    async function CheckCompleted() {
+        for (let task of tasks) {
             if (task.pids === undefined || task.pids.length === 0) {
                 continue;
             }
-            ns.print("checking pids " + task.pids.join());
             let running = false;
             for (let proc of task.pids) {
-                ns.print(JSON.stringify(proc));
-                if (ns.isRunning(proc[1], proc[2])) {
+                if (ns.isRunning(proc[1], proc[0])) {
                     running = true;
-                    ns.print("pid " + proc[1] + " " + proc[2])
                 }
             }
             if (!running) {
-                ns.print("not running");
                 let compSquak = new ReturnSquak();
                 task.target.growTime = ns.getGrowTime(task.target.name);
                 task.target.weakenTime = ns.getWeakenTime(task.target.name);
@@ -128,14 +135,14 @@ export async function main(ns) {
                     writeFlag = await output.tryWrite(JSON.stringify(compSquak));
                     await ns.sleep(50);
                 }
-                ns.print("squaked " + compSquak.id + " completed.");
+                ns.print("Squaked task " + compSquak.id + " completed.");
+                tasks.splice(tasks.find(element => element.id === task.id), 1);
             }
         }
-
-        await ns.sleep(1);
     }
 
 }
+
 class AcceptSquak {
     id = 0;
     threads = 0;

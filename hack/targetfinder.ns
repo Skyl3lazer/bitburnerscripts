@@ -42,7 +42,9 @@ export async function main(ns) {
 			portData = JSON.parse(portData);
 			const ord = orderQueue.find(element => element.id == portData.id);
 			if (portData.threads < ord.threads) {
-				ns.print("ID "+ord.id+": "+"Only " + portData.threads + " of " + ord.threads + " were started. Requesting " + (ord.threads - portData.threads));
+				if (portData.threads > 0) {
+					ns.print("ID " + ord.id + ": " + "Only " + portData.threads + " of " + ord.threads + " were started. Requesting " + (ord.threads - portData.threads));
+				}
 				let writeCheckSquak = false;
 				let partialOrder = JSON.parse(JSON.stringify(ord));
 				partialOrder.threads -= portData.threads;
@@ -50,8 +52,8 @@ export async function main(ns) {
 					writeCheckSquak = await ns.tryWritePort(1, JSON.stringify(partialOrder));
 					await ns.sleep(5);
 				}
-			}else{
-				ns.print("ID "+ord.id+": Running on "+ord.threads+" threads.");
+			} else {
+				ns.print("ID " + ord.id + ": Running on " + ord.threads + " threads.");
 			}
 			portData = ns.readPort(2);
 		}
@@ -61,10 +63,10 @@ export async function main(ns) {
 			portData = JSON.parse(portData);
 			const ord = orderQueue.find(element => element.id == portData.id);
 			if (portData.threads < ord.threads) {
-				ns.print("ID "+ord.id(": Completed "+portData.threads+" of "+ord.threads+" threads."));
+				ns.print("ID " + ord.id + ": Completed " + portData.threads + " of " + ord.threads + " threads.");
 				ord.threads -= portData.threads;
 			} else {
-				ns.print("ID "+ord.id(": Completed."));
+				ns.print("ID " + ord.id(": Completed."));
 				orderQueue.splice(orderQueue.indexOf(orderQueue.find(element => element.id == portData.id)), 1);
 			}
 			portData = ns.readPort(3);
