@@ -1,11 +1,13 @@
 /** @param {NS} ns **/
 //todo: make it pick up new servers as I get them
 export async function main(ns) {
-    //ns.disableLog("ALL");
+    ns.disableLog("ALL");
+    /*
     ns.disableLog("getServerUsedRam");
     ns.disableLog("sleep");
     ns.disableLog("getServerMoneyAvailable");
     ns.disableLog("getServerSecurityLevel");
+    */
     ns.tail();
     var portData;
     var threads;

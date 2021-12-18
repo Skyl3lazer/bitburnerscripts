@@ -21,7 +21,7 @@ export async function main(ns) {
 	var weight_growth = 2000000;
 	var securityThresh = 0; //Don't hack if security is below this threshhold (plus base min)
 	var moneyThresh = .65; //Don't hack if money is below maxMoney * moneyThresh
-	var maxConcurrent = 5; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
+	var maxConcurrent = 2; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
 	var hackThreadThresh = 15000; //Won't run more than this many hack threads at once
 	var batchOffset = 500;//ms to delay between batches in a hwgw
 	//End Configuration
