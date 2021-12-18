@@ -209,20 +209,20 @@ export async function main(ns) {
 
 			for (let i = 0; i < batchSize; i++) {
 				let w1 = JSON.parse(JSON.stringify(addweak1));
-				w1.delay += i * highTarget.weakenTime + (batchOffset * 4);
+				w1.delay += i * (batchOffset * 4);
 				w1.id += i * 4;
 				w1.batchID = i;
 				let w2 = JSON.parse(JSON.stringify(addweak2));
-				w2.delay += i * highTarget.weakenTime + (batchOffset * 4);
+				w2.delay += i * (batchOffset * 4);
 				w2.id += i * 4;
 				w2.batchID = i;
 				nextOrderID = w2.id + 1;
 				let g = JSON.parse(JSON.stringify(addgrow));
-				g.delay += i * highTarget.weakenTime + (batchOffset * 4);
+				g.delay += i * (batchOffset * 4);
 				g.id += i * 4;
 				g.batchID = i;
 				let h = JSON.parse(JSON.stringify(ord));
-				h.delay += i * highTarget.weakenTime + (batchOffset * 4);
+				h.delay += i * (batchOffset * 4);
 				h.id += i * 4;
 				h.batchID = i;
 				orderBatch.push(w1);
