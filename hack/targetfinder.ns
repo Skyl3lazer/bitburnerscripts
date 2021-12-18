@@ -23,10 +23,11 @@ export async function main(ns) {
 	var moneyThresh = .65; //Don't hack if money is below maxMoney * moneyThresh
 	var maxConcurrent = 15; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
 	var hackThreadThresh = 1500; //Won't run more than this many hack threads at once
+	var batchOffset = 50;//ms to delay between batches in a hwgw
 	//End Configuration
 
 	var ImportServers = JSON.parse(ns.read("serverlist.txt"));
-	var orderQueue = [];
+	var orderQueue = new Array();
 	var nextOrderID = 1;
 	var totalweight = weight_maxMoney + weight_growth;
 	weight_maxMoney /= totalweight;
@@ -87,16 +88,19 @@ export async function main(ns) {
 			portData = ns.readPort(3);
 		}
 		//write a new order
-		if (orderQueue.length < maxConcurrent) {
-			let order = await determineOrder();
-			if (order !== "NO ORDER") {
-				let writeCheckNew = false;
-				ns.print("Writing Order " + order.id + ": " + order.type + " " + order.target.name);
-				while (!writeCheckNew) {
-					writeCheckNew = await ns.tryWritePort(1, JSON.stringify(order));
-					await ns.sleep(5);
+		let distictTargets = new Set(orderQueue.map(x => x.target.name)).size;
+		if (distictTargets < maxConcurrent) {
+			let orders = await determineOrder();
+			if (orders !== "NO ORDER") {
+				for (let order of orders) {
+					let writeCheckNew = await ns.tryWritePort(1, JSON.stringify(order));
+					ns.print("Writing Order " + order.id + ": " + order.type + " " + order.target.name);
+					while (!writeCheckNew) {
+						await ns.sleep(5);
+						writeCheckNew = await ns.tryWritePort(1, JSON.stringify(order));
+					}
+					orderQueue.push(order);
 				}
-				orderQueue.push(order);
 			}
 		}
 		await ns.write("orderqueue.txt", JSON.stringify(orderQueue), "w");
@@ -137,23 +141,73 @@ export async function main(ns) {
 		if (highTarget.security > highTarget.minSec + securityThresh) {
 			type = "w";
 			threads = Math.ceil((highTarget.security - (highTarget.minSec + securityThresh)) / 0.05); //0.05 is a static amount reduced per thread
+
+			if (threads <= 0) {
+				ns.print("Invalid order generated: " + type + " " + highTarget.name);
+				return Promise.resolve("NO ORDER");
+			}
+			let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
+			nextOrderID++;
+			return Promise.resolve(new Array(ord)); //return the Order object
 		} else if (highTarget.money <= highTarget.maxMoney * moneyThresh) {
 			type = "g";
 			threads = Math.ceil(ns.growthAnalyze(highTarget.name, highTarget.maxMoney / highTarget.money));
+
+			if (threads <= 0) {
+				ns.print("Invalid order generated: " + type + " " + highTarget.name);
+				return Promise.resolve("NO ORDER");
+			}
+			let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
+			nextOrderID++;
+			return Promise.resolve(new Array(ord)); //return the Order object
 		} else {
+			let orderBatch = new Array();
 			type = "h";
 			threads = Math.ceil(ns.hackAnalyzeThreads(highTarget.name, highTarget.maxMoney * (1 - moneyThresh)));
 			if (threads > hackThreadThresh) {
 				threads = hackThreadThresh;
 			}
+			
+			if (threads <= 0) {
+				ns.print("Invalid order generated: " + type + " " + highTarget.name);
+				return Promise.resolve("NO ORDER");
+			}
+			
+			highTarget.growTime = ns.getGrowTime(highTarget.name);
+			highTarget.weakenTime = ns.getWeakenTime(highTarget.name);
+			highTarget.hackTime = ns.getHackTime(highTarget.name);
+			let hackWait = Math.ceil(highTarget.weakenTime - highTarget.hackTime - batchOffset);
+			let growWait = Math.ceil(batchOffset + highTarget.weakenTime - highTarget.growTime);
+			let weak2Wait = Math.ceil(batchOffset * 2);
+
+			let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
+			nextOrderID++;
+			ord.delay = hackWait;
+
+			let calcThreads = 0;
+			//add weak1
+			calcThreads = Math.ceil((0.002 * threads) / 0.05);
+			let addweak1 = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "w");
+			nextOrderID++;
+			//add grow
+			calcThreads = Math.ceil(ns.growthAnalyze(highTarget.name,
+				highTarget.maxMoney / (highTarget.money - (ns.hackAnalyze(highTarget.name) * threads * highTarget.money))));
+			let addgrow = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "g");
+			nextOrderID++;
+			addgrow.delay = growWait;
+			//add weak2
+			calcThreads = Math.ceil((0.004 * calcThreads) / 0.05);
+			let addweak2 = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "w");
+			nextOrderID++;
+			addweak2.delay = weak2Wait;
+
+			orderBatch.push(addweak1);
+			orderBatch.push(addweak2);
+			orderBatch.push(addgrow);
+			orderBatch.push(ord);
+
+			return Promise.resolve(orderBatch);
 		}
-		if (threads <= 0) {
-			ns.print("Invalid order generated: " + type + " " + highTarget.name);
-			return Promise.resolve("NO ORDER");
-		}
-		let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
-		nextOrderID++;
-		return Promise.resolve(ord); //return the Order object
 	}
 }
 export class Order {
@@ -163,6 +217,7 @@ export class Order {
 	id = 0;
 	type = ""; //h, g, w
 	neededThreads = 0;
+	delay = 0;
 	constructor(cid, ctarget, cthreads, csecThresh, ctype) {
 		this.id = cid;
 		this.target = ctarget;

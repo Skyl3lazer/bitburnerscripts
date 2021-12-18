@@ -53,7 +53,7 @@ export async function main(ns) {
                 }
                 if (availThreads > 0) {
                     neededThreads -= availThreads;
-                    let pid = ns.exec("/hack/weaken.ns", host.name, availThreads, portData.target.name);
+                    let pid = ns.exec("/hack/weaken.ns", host.name, availThreads, portData.target.name, portData.delay);
                     portData.pids.push([host.name, pid, availThreads]);
                     assignedThreads += availThreads;
                     host.freemem = host.maxRam - (availThreads * weakenSize);
@@ -66,7 +66,7 @@ export async function main(ns) {
 
                 if (availThreads > 0) {
                     neededThreads -= availThreads;
-                    let pid = ns.exec("/hack/hack.ns", host.name, availThreads, portData.target.name);
+                    let pid = ns.exec("/hack/hack.ns", host.name, availThreads, portData.target.name, portData.delay);
                     portData.pids.push([host.name, pid, availThreads]);
                     assignedThreads += availThreads;
                     host.freemem = host.maxRam - (availThreads * hackSize);
@@ -79,7 +79,7 @@ export async function main(ns) {
 
                 if (availThreads > 0) {
                     neededThreads -= availThreads;
-                    let pid = ns.exec("/hack/grow.ns", host.name, availThreads, portData.target.name);
+                    let pid = ns.exec("/hack/grow.ns", host.name, availThreads, portData.target.name, portData.delay);
                     portData.pids.push([host.name, pid, availThreads]);
                     assignedThreads += availThreads;
                     host.freemem = host.maxRam - (availThreads * growSize);

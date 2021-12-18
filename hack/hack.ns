@@ -2,10 +2,12 @@
 //hacks a target
 export async function main(ns) {
 	let target = ns.args[0];
+	let wait = ns.args[1] || 0;
+	await ns.sleep(wait);
 	let amount = await ns.hack(target);
-	if (amount > 0) {
+	if (amount > 10000000) {
 		ns.toast("Hacked " + ns.nFormat(amount, "$0,0.00") + " from " + target+"!");
 	} else if (amount ===0){
-		ns.toast("Hack failed on "+target+"!");
+		//ns.toast("Hack failed on "+target+"!");
 	}
 }
