@@ -1,7 +1,11 @@
 /** @param {NS} ns **/
 //todo: make it pick up new servers as I get them
 export async function main(ns) {
-    ns.disableLog("ALL");
+    //ns.disableLog("ALL");
+    ns.disableLog("getServerUsedRam");
+    ns.disableLog("sleep");
+    ns.disableLog("getServerMoneyAvailable");
+    ns.disableLog("getServerSecurityLevel");
     ns.tail();
     var portData;
     var threads;
@@ -10,6 +14,7 @@ export async function main(ns) {
     var accept = ns.getPortHandle(2);
     var output = ns.getPortHandle(3);
     var tasks = new Array();
+    var fudge = 0;
 
     //script sizes
     let hackSize = 1.7;
@@ -51,12 +56,10 @@ export async function main(ns) {
                 if (availThreads > neededThreads) {
                     availThreads = neededThreads;
                 }
-                if(ns.isRunning("/hack/weaken.ns", host.name, portData.target.name, 0, portData.delay)){
-                    availThreads = 0;
-                }
                 if (availThreads > 0) {
+                    let pid = ns.exec("/hack/weaken.ns", host.name, availThreads, portData.target.name, portData.delay, fudge);
+                    fudge++;
                     neededThreads -= availThreads;
-                    let pid = ns.exec("/hack/weaken.ns", host.name, availThreads, portData.target.name, portData.delay);
                     portData.pids.push([host.name, pid, availThreads, portData.target.name, portData.delay]);
                     assignedThreads += availThreads;
                     host.freemem = host.maxRam - (availThreads * weakenSize);
@@ -66,12 +69,10 @@ export async function main(ns) {
                 if (availThreads > neededThreads) {
                     availThreads = neededThreads;
                 }
-                if(ns.isRunning("/hack/hack.ns", host.name, portData.target.name, 0, portData.delay)){
-                    availThreads = 0;
-                }
                 if (availThreads > 0) {
+                    let pid = ns.exec("/hack/hack.ns", host.name, availThreads, portData.target.name, portData.delay, fudge);
+                    fudge++;
                     neededThreads -= availThreads;
-                    let pid = ns.exec("/hack/hack.ns", host.name, availThreads, portData.target.name, portData.delay);
                     portData.pids.push([host.name, pid, availThreads, portData.target.name, portData.delay]);
                     assignedThreads += availThreads;
                     host.freemem = host.maxRam - (availThreads * hackSize);
@@ -81,12 +82,10 @@ export async function main(ns) {
                 if (availThreads > neededThreads) {
                     availThreads = neededThreads;
                 }
-                if(ns.isRunning("/hack/grow.ns", host.name, portData.target.name, 0, portData.delay)){
-                    availThreads = 0;
-                }
                 if (availThreads > 0) {
+                    let pid = ns.exec("/hack/grow.ns", host.name, availThreads, portData.target.name, portData.delay, fudge);
+                    fudge++;
                     neededThreads -= availThreads;
-                    let pid = ns.exec("/hack/grow.ns", host.name, availThreads, portData.target.name, portData.delay);
                     portData.pids.push([host.name, pid, availThreads, portData.target.name, portData.delay]);
                     assignedThreads += availThreads;
                     host.freemem = host.maxRam - (availThreads * growSize);
@@ -133,7 +132,7 @@ export async function main(ns) {
             }
             for (let proc of task.pids) {
                 let running = false;
-                if (ns.isRunning(proc[1], proc[0], proc[3], proc[4])) {
+                if (ns.isRunning(proc[1], proc[0])) {
                     running = true;
                 }
 
@@ -152,7 +151,7 @@ export async function main(ns) {
                         writeFlag = await output.tryWrite(JSON.stringify(compSquak));
                         await ns.sleep(50);
                     }
-                    ns.print("Squaked task " + compSquak.id + " completed " + proc[2] + " threads on: " + proc[0]);
+                    ns.print("Squaked task " + compSquak.id + " completed " + proc[2] + " threads on: " + proc[0]+" (PID "+proc[1]+")");
                     task.pids.splice(task.pids.indexOf(proc), 1);
                 }
             }
