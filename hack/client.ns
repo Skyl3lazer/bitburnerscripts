@@ -51,10 +51,13 @@ export async function main(ns) {
                 if (availThreads > neededThreads) {
                     availThreads = neededThreads;
                 }
+                if(ns.isRunning("/hack/weaken.ns", host.name, portData.target.name, 0, portData.delay)){
+                    availThreads = 0;
+                }
                 if (availThreads > 0) {
                     neededThreads -= availThreads;
                     let pid = ns.exec("/hack/weaken.ns", host.name, availThreads, portData.target.name, portData.delay);
-                    portData.pids.push([host.name, pid, availThreads]);
+                    portData.pids.push([host.name, pid, availThreads, portData.target.name, portData.delay]);
                     assignedThreads += availThreads;
                     host.freemem = host.maxRam - (availThreads * weakenSize);
                 }
@@ -63,11 +66,13 @@ export async function main(ns) {
                 if (availThreads > neededThreads) {
                     availThreads = neededThreads;
                 }
-
+                if(ns.isRunning("/hack/hack.ns", host.name, portData.target.name, 0, portData.delay)){
+                    availThreads = 0;
+                }
                 if (availThreads > 0) {
                     neededThreads -= availThreads;
                     let pid = ns.exec("/hack/hack.ns", host.name, availThreads, portData.target.name, portData.delay);
-                    portData.pids.push([host.name, pid, availThreads]);
+                    portData.pids.push([host.name, pid, availThreads, portData.target.name, portData.delay]);
                     assignedThreads += availThreads;
                     host.freemem = host.maxRam - (availThreads * hackSize);
                 }
@@ -76,11 +81,13 @@ export async function main(ns) {
                 if (availThreads > neededThreads) {
                     availThreads = neededThreads;
                 }
-
+                if(ns.isRunning("/hack/grow.ns", host.name, portData.target.name, 0, portData.delay)){
+                    availThreads = 0;
+                }
                 if (availThreads > 0) {
                     neededThreads -= availThreads;
                     let pid = ns.exec("/hack/grow.ns", host.name, availThreads, portData.target.name, portData.delay);
-                    portData.pids.push([host.name, pid, availThreads]);
+                    portData.pids.push([host.name, pid, availThreads, portData.target.name, portData.delay]);
                     assignedThreads += availThreads;
                     host.freemem = host.maxRam - (availThreads * growSize);
                 }
@@ -101,7 +108,7 @@ export async function main(ns) {
         let taskLoc = tasks.findIndex(element => element.id === id);
         if (taskLoc >= 0) {
             tasks.splice(taskLoc, 1, portData);
-        } else {
+        } else if(assignedThreads > 0) {
             tasks.push(portData);
         }
 
@@ -124,12 +131,10 @@ export async function main(ns) {
             if (task.pids === undefined || task.pids.length === 0) {
                 continue;
             }
-            var anyRunning = false;
             for (let proc of task.pids) {
                 let running = false;
-                if (ns.isRunning(proc[1], proc[0])) {
+                if (ns.isRunning(proc[1], proc[0], proc[3], proc[4])) {
                     running = true;
-                    anyRunning = true;
                 }
 
                 if (!running) {
