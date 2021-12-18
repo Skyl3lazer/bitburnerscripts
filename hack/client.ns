@@ -1,4 +1,5 @@
 /** @param {NS} ns **/
+//todo: make it pick up new servers as I get them
 export async function main(ns) {
     ns.disableLog("ALL");
     ns.tail();
@@ -28,7 +29,7 @@ export async function main(ns) {
         portData = orders.read();
         while (portData === "NULL PORT DATA") {
             await CheckCompleted();
-            await ns.sleep(3500);
+            await ns.sleep(500);
             portData = orders.read();
         }
         portData = JSON.parse(portData);
@@ -42,7 +43,7 @@ export async function main(ns) {
                 host.freemem -= 64;
             }
             if (neededThreads === 0) {
-                continue;
+                break;
             }
             let availThreads = 0;
             if (portData.type === "w") {
@@ -94,10 +95,10 @@ export async function main(ns) {
         //report completed tasks
         await CheckCompleted();
 
-		let startingNeed = portData.neededThreads;
+        let startingNeed = portData.neededThreads;
         portData.neededThreads = neededThreads;
 
-        let taskLoc = tasks.findIndex(element => element.id === portData.id);
+        let taskLoc = tasks.findIndex(element => element.id === id);
         if (taskLoc >= 0) {
             tasks.splice(taskLoc, 1, portData);
         } else {
@@ -114,10 +115,9 @@ export async function main(ns) {
             await ns.sleep(50);
         }
         if (squak.startedThreads > 0) {
-            ns.print("Squaked accepted task " + squak.id + " with threads: " + squak.startedThreads + "/" + startingNeed +" Needed: " +portData.neededThreads);
+            ns.print("Squaked accepted task " + squak.id + " with threads: " + squak.startedThreads + "/" + startingNeed + " Needed: " + portData.neededThreads);
         }
-
-        await ns.sleep(1);
+        await ns.write("tasks.txt", JSON.stringify(tasks), "w");
     }
     async function CheckCompleted() {
         for (let task of tasks) {
