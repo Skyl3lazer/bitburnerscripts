@@ -21,9 +21,9 @@ export async function main(ns) {
 	var weight_growth = 2000000;
 	var securityThresh = 0; //Don't hack if security is below this threshhold (plus base min)
 	var moneyThresh = .65; //Don't hack if money is below maxMoney * moneyThresh
-	var maxConcurrent = 15; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
-	var hackThreadThresh = 1500; //Won't run more than this many hack threads at once
-	var batchOffset = 50;//ms to delay between batches in a hwgw
+	var maxConcurrent = 5; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
+	var hackThreadThresh = 15000; //Won't run more than this many hack threads at once
+	var batchOffset = 500;//ms to delay between batches in a hwgw
 	//End Configuration
 
 	var ImportServers = JSON.parse(ns.read("serverlist.txt"));
@@ -130,6 +130,8 @@ export async function main(ns) {
 			server.money = ns.getServerMoneyAvailable(server.name);
 			server.security = ns.getServerSecurityLevel(server.name);
 			let score = (server.maxMoney * weight_maxMoney) + (server.growth * weight_growth);
+			server.hackTime = ns.getHackTime(server.name);
+			score /= server.hackTime;
 			if (score > highScore) {
 				highScore = score;
 				highTarget = server;
@@ -175,7 +177,6 @@ export async function main(ns) {
 			
 			highTarget.growTime = ns.getGrowTime(highTarget.name);
 			highTarget.weakenTime = ns.getWeakenTime(highTarget.name);
-			highTarget.hackTime = ns.getHackTime(highTarget.name);
 			let hackWait = Math.ceil(highTarget.weakenTime - highTarget.hackTime - batchOffset);
 			let growWait = Math.ceil(batchOffset + highTarget.weakenTime - highTarget.growTime);
 			let weak2Wait = Math.ceil(batchOffset * 2);
