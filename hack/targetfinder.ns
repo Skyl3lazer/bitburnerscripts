@@ -21,8 +21,8 @@ export async function main(ns) {
 	var weight_growth = 2000000;
 	var securityThresh = 0; //Don't hack if security is below this threshhold (plus base min)
 	var moneyThresh = .85; //Don't hack if money is below maxMoney * moneyThresh
-	var maxConcurrent = 4; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
-	var hackThreadThresh = 1000; //Won't run more than this many hack threads at once
+	var maxConcurrent = 5; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
+	var hackThreadThresh = 1500; //Won't run more than this many hack threads at once
 	//End Configuration
 
 	var ImportServers = JSON.parse(ns.read("serverlist.txt"));
@@ -65,18 +65,16 @@ export async function main(ns) {
 		while (portData !== "NULL PORT DATA") {
 			portData = JSON.parse(portData);
 			const ord = orderQueue.find(element => element.id === portData.id);
-			if ((ord.neededThreads - portData.threads) !== 0) {
+			if ((ord.neededThreads - portData.threads) > 0) {
 				ord.neededThreads -= portData.threads;
 				ns.print("ID " + ord.id + " " + ord.type + " " + ord.target.name + ": Completed " + (ord.threads - ord.neededThreads) + " of " + ord.threads + " threads.");
 			} else {
-				ns.print("ID " + ord.id + " " + ord.type + " " + ord.target.name + ": Completed.");
-				orderQueue.splice(orderQueue.indexOf(orderQueue.find(element => element.id == portData.id)), 1);
+
 				let updateSrv = ImportServers.find(function (server) { return server.name === portData.server.name });
 				updateSrv = portData.server;
-				await ns.write("serverlist.txt", JSON.stringify(ImportServers), "w");
-				servers = ImportServers.filter(function (server) {
-					return !exclude.includes(server.name) && !server.name.startsWith("pserv");
-				});
+				ns.print("ID " + ord.id + " " + ord.type + " " + ord.target.name + ": Completed.");
+				orderQueue.splice(orderQueue.indexOf(orderQueue.find(element => element.id == portData.id)), 1);
+
 			}
 
 			portData = ns.readPort(3);
@@ -96,6 +94,9 @@ export async function main(ns) {
 		}
 		await ns.write("orderqueue.txt", JSON.stringify(orderQueue), "w");
 		await ns.write("serverlist.txt", JSON.stringify(ImportServers), "w");
+		servers = ImportServers.filter(function (server) {
+			return !exclude.includes(server.name) && !server.name.startsWith("pserv");
+		});
 		await ns.sleep(3000);
 	}
 
@@ -134,7 +135,7 @@ export async function main(ns) {
 			threads = Math.ceil(ns.growthAnalyze(highTarget.name, highTarget.maxMoney / highTarget.money));
 		} else {
 			type = "h";
-			threads = Math.ceil(ns.hackAnalyzeThreads(highTarget.name, highTarget.maxMoney * moneyThresh));
+			threads = Math.ceil(ns.hackAnalyzeThreads(highTarget.name, highTarget.maxMoney * (1 - moneyThresh)));
 			if (threads > hackThreadThresh) {
 				threads = hackThreadThresh;
 			}
