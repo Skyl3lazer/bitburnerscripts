@@ -5,6 +5,7 @@ export async function main(ns) {
 	ns.disableLog("getHackingLevel");
 	ns.disableLog("getServerMoneyAvailable");
 	ns.disableLog("getServerSecurityLevel");
+	ns.disableLog("run");
 	ns.tail();
 	/*
 	Port Mapping:
@@ -17,16 +18,17 @@ export async function main(ns) {
 	ns.clearPort(3);
 	ns.run("/hack/client.ns");
 	//Configuration
+	var exclude = ["home", "n00dles", "darkweb", "CSEC", "avmnite-02h", "I.I.I.I", "run4theh111z", ".", "The-Cave"];
 	var weight_maxMoney = 10;
 	var weight_growth = 2000000;
 	var securityThresh = 0; //Don't hack if security is below this threshhold (plus base min)
 	var moneyThresh = .65; //Don't hack if money is below maxMoney * moneyThresh
 	var maxConcurrent = 2; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
 	var hackThreadThresh = 15000; //Won't run more than this many hack threads at once
-	var batchOffset = 500;//ms to delay between batches in a hwgw
+	var batchOffset = 5000;//ms to delay between batches in a hwgw
 	//End Configuration
 
-	var ImportServers = JSON.parse(ns.read("serverlist.txt"));
+	var ImportServers;
 	var orderQueue = new Array();
 	var nextOrderID = 1;
 	var totalweight = weight_maxMoney + weight_growth;
@@ -34,10 +36,11 @@ export async function main(ns) {
 	weight_growth /= totalweight;
 
 	//filter unwanted servers
-	var exclude = ["home", "n00dles", "darkweb", "CSEC", "avmnite-02h", "I.I.I.I", "run4theh111z", ".", "The-Cave"];
-	var servers = ImportServers.filter(function (server) {
-		return !exclude.includes(server.name) && !server.name.startsWith("pserv");
-	});
+	var servers;
+
+	await UpdateServers();
+
+	
 
 	//main loop
 	while (true) {
@@ -83,6 +86,7 @@ export async function main(ns) {
 				updateSrv = portData.server;
 				ns.print("ID " + ord.id + " " + ord.type + " " + ord.target.name + ": Completed.");
 				orderQueue.splice(orderQueue.indexOf(orderQueue.find(element => element.id == portData.id)), 1);
+				await UpdateServers();
 			}
 
 			portData = ns.readPort(3);
@@ -169,12 +173,12 @@ export async function main(ns) {
 			if (threads > hackThreadThresh) {
 				threads = hackThreadThresh;
 			}
-			
+
 			if (threads <= 0) {
 				ns.print("Invalid order generated: " + type + " " + highTarget.name);
 				return Promise.resolve("NO ORDER");
 			}
-			
+
 			highTarget.growTime = ns.getGrowTime(highTarget.name);
 			highTarget.weakenTime = ns.getWeakenTime(highTarget.name);
 			let hackWait = Math.ceil(highTarget.weakenTime - highTarget.hackTime - batchOffset);
@@ -209,6 +213,13 @@ export async function main(ns) {
 
 			return Promise.resolve(orderBatch);
 		}
+	}
+	async function UpdateServers() {
+		await ns.run("/scanall.ns");
+		ImportServers = JSON.parse(ns.read("serverlist.txt"));
+		servers = ImportServers.filter(function (server) {
+			return !exclude.includes(server.name) && !server.name.startsWith("pserv");
+		});
 	}
 }
 export class Order {

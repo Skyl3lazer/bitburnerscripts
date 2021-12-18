@@ -22,16 +22,11 @@ export async function main(ns) {
     let hackSize = 1.7;
     let weakenSize = 1.75;
     let growSize = 1.75;
+    var ImportServers;
+    var myServers;
 
-    var ImportServers = JSON.parse(ns.read("serverlist.txt"));
-    var myServers = ImportServers.filter(function (server) {
-        return server.hasRoot && server.maxRam > 0;
-    });
-    for (let host of myServers) {
-        await ns.scp("/hack/weaken.ns", host.name);
-        await ns.scp("/hack/grow.ns", host.name);
-        await ns.scp("/hack/hack.ns", host.name);
-    }
+    await UpdateServers();
+
     while (true) {
         portData = orders.read();
         while (portData === "NULL PORT DATA") {
@@ -109,7 +104,7 @@ export async function main(ns) {
         let taskLoc = tasks.findIndex(element => element.id === id);
         if (taskLoc >= 0) {
             tasks.splice(taskLoc, 1, portData);
-        } else if(assignedThreads > 0) {
+        } else if (assignedThreads > 0) {
             tasks.push(portData);
         }
 
@@ -126,6 +121,18 @@ export async function main(ns) {
             ns.print("Squaked accepted task " + squak.id + " with threads: " + squak.startedThreads + "/" + startingNeed + " Needed: " + portData.neededThreads);
         }
         await ns.write("tasks.txt", JSON.stringify(tasks), "w");
+    }
+    async function UpdateServers() {
+        await ns.run("/scanall.ns");
+        ImportServers = JSON.parse(ns.read("serverlist.txt"));
+        myServers = ImportServers.filter(function (server) {
+            return server.hasRoot && server.maxRam > 0;
+        });
+        for (let host of myServers) {
+            await ns.scp("/hack/weaken.ns", host.name);
+            await ns.scp("/hack/grow.ns", host.name);
+            await ns.scp("/hack/hack.ns", host.name);
+        }
     }
     async function CheckCompleted() {
         for (let task of tasks) {
@@ -153,8 +160,9 @@ export async function main(ns) {
                         writeFlag = await output.tryWrite(JSON.stringify(compSquak));
                         await ns.sleep(50);
                     }
-                    ns.print("Squaked task " + compSquak.id + " completed " + proc[2] + " threads on: " + proc[0]+" (PID "+proc[1]+")");
+                    ns.print("Squaked task " + compSquak.id + " completed " + proc[2] + " threads on: " + proc[0] + " (PID " + proc[1] + ")");
                     task.pids.splice(task.pids.indexOf(proc), 1);
+                    await UpdateServers();
                 }
             }
             if (task.neededThreads === 0 && task.pids.length === 0) {
