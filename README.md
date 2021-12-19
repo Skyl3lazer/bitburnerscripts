@@ -39,7 +39,7 @@ Configuration (in targetfinder)
 	var hackThreadThresh = 15000; 
 	
 	//ms to delay between command ends in a hwgw
-	var batchOffset = 2500;
+	var batchOffset = 5000;
 	
 	//How many chained hwhw will be placed on each concurrent server at most.
 	//If this number is large, you'll basically only hack the most efficient server constantly
