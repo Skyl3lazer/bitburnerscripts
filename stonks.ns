@@ -147,6 +147,11 @@ export async function main(ns) {
 					prices[index] = sharePrice;
 					totalWorth += prices[index] * shares[index];
 				}
+			} else {
+				var sharePrice = ns.stock.getAskPrice(item);
+				totalWorth -= prices[index] * shares[index];
+				prices[index] = sharePrice;
+				totalWorth += prices[index] * shares[index];
 			}
 		});
 		stockInvestmentRatio = 1 / (symbols.length * ((investedStocks + 2) / symbols.length));
