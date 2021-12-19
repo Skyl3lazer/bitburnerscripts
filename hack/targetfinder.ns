@@ -165,6 +165,9 @@ export async function main(ns) {
 		var anyHighTargetOrder = orderQueue.filter(function (order) {
 					return order.target.name === highTarget.name;
 				}).length > 0;
+		var anyHighTargetNonBatchedOrder = orderQueue.filter(function (order) {
+					return order.target.name === highTarget.name && !order.isBatch;
+				}).length > 0;
 		if (highTarget.security > highTarget.minSec + securityThresh && !anyHighTargetOrder) {
 			type = "w";
 			threads = Math.ceil((highTarget.security - (highTarget.minSec + securityThresh)) / 0.05); //0.05 is a static amount reduced per thread
@@ -260,20 +263,20 @@ export async function main(ns) {
 					let w1 = JSON.parse(JSON.stringify(addweak1));
 					w1.delay += i * (batchOffset * 4);
 					w1.id += i * 4;
-					w1.batchID = i;
+					w1.batchID = 0;
 					let w2 = JSON.parse(JSON.stringify(addweak2));
 					w2.delay += i * (batchOffset * 4);
 					w2.id += i * 4;
-					w2.batchID = i;
+					w2.batchID = 3;
 					nextOrderID = w2.id + 1;
 					let g = JSON.parse(JSON.stringify(addgrow));
 					g.delay += i * (batchOffset * 4);
 					g.id += i * 4;
-					g.batchID = i;
+					g.batchID = 3;
 					let h = JSON.parse(JSON.stringify(ord));
 					h.delay += i * (batchOffset * 4);
 					h.id += i * 4;
-					h.batchID = i;
+					h.batchID = 1;
 					orderBatch.push(w1);
 					orderBatch.push(w2);
 					orderBatch.push(g);
