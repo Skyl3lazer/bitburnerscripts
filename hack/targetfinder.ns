@@ -180,7 +180,7 @@ export async function main(ns) {
 		} else {
 			let orderBatch = new Array();
 			type = "h";
-			threads = Math.ceil(ns.hackAnalyzeThreads(highTarget.name, highTarget.maxMoney * (1 - moneyThresh)));
+			threads = Math.floor(ns.hackAnalyzeThreads(highTarget.name, highTarget.maxMoney * (1 - moneyThresh)));
 			if (threads > hackThreadThresh) {
 				threads = hackThreadThresh;
 			}
