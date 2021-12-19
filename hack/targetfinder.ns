@@ -104,6 +104,7 @@ export async function main(ns) {
 			(new Set(orderQueue.filter(function (order) {
 				return order.isBatch && order.batchID === 3;
 			}).map(a => a.target.name)).size);
+			ns.tprint("Distinct: "+distictTargets);
 		if (distictTargets < maxConcurrent) {
 			let orders = await determineOrder();
 			if (orders !== "NO ORDER") {
@@ -133,19 +134,15 @@ export async function main(ns) {
 	//Determine the order to send next
 	async function determineOrder() {
 		let hackLevel = ns.getHackingLevel();
-		let hackableServers = servers.filter(function (server) {
+		let hackableServers = JSON.parse(JSON.stringify(servers.filter(function (server) {
 			return server.hackLevel <= hackLevel
-				&& orderQueue.filter(function (order) {
-					return order.target.name === server.name && order.isBatch && order.batchID === 3;
-				}).length < maxBatchSize
-				&& orderQueue.filter(order => order.target.name === server.name && !order.isBatch).length === 0
 				&& server.hasRoot;
-		});
+		})));
 		if (hackableServers.length === 0) {
 			return Promise.resolve("NO ORDER");
 		}
-		let highScore = 0;
-		let highTarget = new Server();
+		let firstHighScore = 0;
+		let firstHighTarget = new Server();
 		let threads = 0;
 		let type = "";
 		hackableServers.forEach(server => {
@@ -154,138 +151,150 @@ export async function main(ns) {
 			let score = (server.maxMoney * weight_maxMoney) + (server.growth * weight_growth);
 			server.hackTime = ns.getHackTime(server.name);
 			score /= server.hackTime;
-			if (score > highScore) {
-				highScore = score;
-				highTarget = server;
+			server.score = score;
+			if (score > firstHighScore) {
+				firstHighScore = score;
+				firstHighTarget = JSON.parse(JSON.stringify(server));
 			}
 		});
-		if (highTarget.name === undefined) {
+		hackableServers.sort((a, b) => b.score - a.score);
+
+		hackableServers.splice(maxConcurrent);
+		if (firstHighTarget.name === undefined) {
 			return Promise.resolve("NO ORDER");
 		}
-		var anyHighTargetOrder = orderQueue.filter(function (order) {
-					return order.target.name === highTarget.name;
-				}).length > 0;
-		var anyHighTargetNonBatchedOrder = orderQueue.filter(function (order) {
-					return order.target.name === highTarget.name && !order.isBatch;
-				}).length > 0;
-		if (highTarget.security > highTarget.minSec + securityThresh && !anyHighTargetOrder) {
-			type = "w";
-			threads = Math.ceil((highTarget.security - (highTarget.minSec + securityThresh)) / 0.05); //0.05 is a static amount reduced per thread
+		
+		var promise = "NO ORDER";
+		//This is only going to run until it gives an order, it won't execute for every target
+		for (let highTarget of hackableServers) {
+			var anyHighTargetOrder = orderQueue.filter(function (order) {
+				return order.target.name === highTarget.name;
+			}).length > 0;
+			var anyHighTargetNonBatchedOrder = orderQueue.filter(function (order) {
+				return order.target.name === highTarget.name && !order.isBatch;
+			}).length > 0;
 
-			if (threads <= 0) {
-				ns.print("Invalid order generated: " + type + " " + highTarget.name);
-				return Promise.resolve("NO ORDER");
-			}
-			let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
-			nextOrderID++;
-			return Promise.resolve(new Array(ord)); //return the Order object
-		} else if (highTarget.money <= highTarget.maxMoney * moneyThresh && !anyHighTargetOrder) {
-			type = "g";
-			threads = Math.ceil(ns.growthAnalyze(highTarget.name, highTarget.maxMoney / highTarget.money));
+			if (highTarget.security > highTarget.minSec + securityThresh && !anyHighTargetNonBatchedOrder) {
+				type = "w";
+				threads = Math.ceil((highTarget.security - (highTarget.minSec + securityThresh)) / 0.05); //0.05 is a static amount reduced per thread
 
-			if (threads <= 0) {
-				ns.print("Invalid order generated: " + type + " " + highTarget.name);
-				return Promise.resolve("NO ORDER");
-			}
-			let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
-			nextOrderID++;
-			return Promise.resolve(new Array(ord)); //return the Order object
-		} else {
-			let orderBatch = new Array();
-			type = "h";
-			threads = Math.floor(ns.hackAnalyzeThreads(highTarget.name, highTarget.maxMoney * (1 - moneyThresh)));
-			if (threads > hackThreadThresh) {
-				threads = hackThreadThresh;
-			}
-
-			if (threads <= 0) {
-				ns.print("Invalid order generated: " + type + " " + highTarget.name);
-				return Promise.resolve("NO ORDER");
-			}
-
-			highTarget.growTime = Math.ceil(ns.getGrowTime(highTarget.name));
-			highTarget.weakenTime = Math.ceil(ns.getWeakenTime(highTarget.name));
-			let hackWait = Math.ceil(highTarget.weakenTime - highTarget.hackTime - batchOffset);
-			let growWait = Math.ceil(batchOffset + highTarget.weakenTime - highTarget.growTime);
-			let weak2Wait = Math.ceil(batchOffset * 2);
-
-			var sumThreads = threads;
-			let startOrderID = nextOrderID;
-			let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
-			ord.isBatch = true;
-			nextOrderID++;
-			ord.delay = hackWait;
-
-			let calcThreads = 0;
-			//add weak1
-			calcThreads = Math.ceil((0.002 * threads) / 0.05);
-			sumThreads += calcThreads;
-			let addweak1 = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "w");
-			addweak1.isBatch = true;
-			nextOrderID++;
-			//add grow
-			calcThreads = Math.ceil(ns.growthAnalyze(highTarget.name,
-				highTarget.maxMoney / (highTarget.money - (ns.hackAnalyze(highTarget.name) * threads * highTarget.money))));
-			sumThreads += calcThreads;
-			let addgrow = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "g");
-			addgrow.isBatch = true;
-			nextOrderID++;
-			addgrow.delay = growWait;
-			//add weak2
-			calcThreads = Math.ceil((0.004 * calcThreads) / 0.05);
-			sumThreads += calcThreads;
-			let addweak2 = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "w");
-			addweak2.isBatch = true;
-			nextOrderID++;
-			addweak2.delay = weak2Wait;
-
-			let freeRamThreads = getFreeRamThreads();
-			let maxBatch_freeRam = Math.floor(freeRamThreads / sumThreads);
-			let existingBatch = orderQueue.filter(function (order) {
-				return order.target.name === highTarget.name && order.isBatch && order.batchID === 3;
-			}).length;
-			let maxBatch_time = Math.floor(highTarget.weakenTime / (4 * batchOffset));
-			let maxBatch_lesser = Math.min(maxBatch_freeRam, maxBatch_time - existingBatch,
-				maxBatchSize - existingBatch);
-
-			if (maxBatch_lesser <= 0) {
-				nextOrderID = startOrderID;
-				if (freeRamThreads > 0 && !anyHighTargetOrder) {
-					ord.isBatch = false;
-					ord.delay = 0;
-					ord.threads = Math.min(freeRamThreads, threads);
-					ord.neededThreads = ord.threads;
-					nextOrderID++;
-					return Promise.resolve(new Array(ord)); //return the Order object
+				if (threads <= 0) {
+					ns.print("Invalid order generated: " + type + " " + highTarget.name);
+					return Promise.resolve("NO ORDER");
 				}
-			} else {
-				for (let i = 0; i < maxBatch_lesser; i++) {
-					let w1 = JSON.parse(JSON.stringify(addweak1));
-					w1.delay += i * (batchOffset * 4);
-					w1.id += i * 4;
-					w1.batchID = 0;
-					let w2 = JSON.parse(JSON.stringify(addweak2));
-					w2.delay += i * (batchOffset * 4);
-					w2.id += i * 4;
-					w2.batchID = 3;
-					nextOrderID = w2.id + 1;
-					let g = JSON.parse(JSON.stringify(addgrow));
-					g.delay += i * (batchOffset * 4);
-					g.id += i * 4;
-					g.batchID = 3;
-					let h = JSON.parse(JSON.stringify(ord));
-					h.delay += i * (batchOffset * 4);
-					h.id += i * 4;
-					h.batchID = 1;
-					orderBatch.push(w1);
-					orderBatch.push(w2);
-					orderBatch.push(g);
-					orderBatch.push(h);
-				}
-			}
+				let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
+				nextOrderID++;
+				return Promise.resolve(new Array(ord)); //return the Order object
+			} else if (highTarget.money <= highTarget.maxMoney * moneyThresh && !anyHighTargetNonBatchedOrder) {
+				type = "g";
+				threads = Math.ceil(ns.growthAnalyze(highTarget.name, highTarget.maxMoney / highTarget.money));
 
-			return Promise.resolve(orderBatch);
+				if (threads <= 0) {
+					ns.print("Invalid order generated: " + type + " " + highTarget.name);
+					return Promise.resolve("NO ORDER");
+				}
+				let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
+				nextOrderID++;
+				return Promise.resolve(new Array(ord)); //return the Order object
+			} else if (!anyHighTargetNonBatchedOrder) {
+				let orderBatch = new Array();
+				type = "h";
+				threads = Math.floor(ns.hackAnalyzeThreads(highTarget.name, highTarget.maxMoney * (1 - moneyThresh)));
+				if (threads > hackThreadThresh) {
+					threads = hackThreadThresh;
+				}
+
+				if (threads <= 0) {
+					ns.print("Invalid order generated: " + type + " " + highTarget.name);
+					return Promise.resolve("NO ORDER");
+				}
+
+				highTarget.growTime = Math.ceil(ns.getGrowTime(highTarget.name));
+				highTarget.weakenTime = Math.ceil(ns.getWeakenTime(highTarget.name));
+				let hackWait = Math.ceil(highTarget.weakenTime - highTarget.hackTime - batchOffset);
+				let growWait = Math.ceil(batchOffset + highTarget.weakenTime - highTarget.growTime);
+				let weak2Wait = Math.ceil(batchOffset * 2);
+
+				var sumThreads = threads;
+				let startOrderID = nextOrderID;
+				let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
+				ord.isBatch = true;
+				nextOrderID++;
+				ord.delay = hackWait;
+
+				let calcThreads = 0;
+				//add weak1
+				calcThreads = Math.ceil((0.002 * threads) / 0.05);
+				sumThreads += calcThreads;
+				let addweak1 = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "w");
+				addweak1.isBatch = true;
+				nextOrderID++;
+				//add grow
+				calcThreads = Math.ceil(ns.growthAnalyze(highTarget.name,
+					highTarget.maxMoney / (highTarget.money - (ns.hackAnalyze(highTarget.name) * threads * highTarget.money))));
+				sumThreads += calcThreads;
+				let addgrow = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "g");
+				addgrow.isBatch = true;
+				nextOrderID++;
+				addgrow.delay = growWait;
+				//add weak2
+				calcThreads = Math.ceil((0.004 * calcThreads) / 0.05);
+				sumThreads += calcThreads;
+				let addweak2 = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "w");
+				addweak2.isBatch = true;
+				nextOrderID++;
+				addweak2.delay = weak2Wait;
+
+				let freeRamThreads = getFreeRamThreads();
+				let maxBatch_freeRam = Math.floor(freeRamThreads / sumThreads);
+				let existingBatch = orderQueue.filter(function (order) {
+					return order.target.name === highTarget.name && order.isBatch && order.batchID === 3;
+				}).length;
+				let maxBatch_time = Math.floor(highTarget.weakenTime / (4 * batchOffset));
+				let maxBatch_lesser = Math.min(maxBatch_freeRam, maxBatch_time - existingBatch,
+					maxBatchSize - existingBatch);
+
+				if (maxBatch_lesser <= 0) {
+					nextOrderID = startOrderID;
+					if (freeRamThreads > 0 && !anyHighTargetOrder) {
+						ord.isBatch = false;
+						ord.delay = 0;
+						ord.threads = Math.min(freeRamThreads, threads);
+						ord.neededThreads = ord.threads;
+						nextOrderID++;
+						return Promise.resolve(new Array(ord)); //return the Order object
+					}
+				} else {
+					for (let i = 0; i < maxBatch_lesser; i++) {
+						let w1 = JSON.parse(JSON.stringify(addweak1));
+						w1.delay += i * (batchOffset * 4);
+						w1.id += i * 4;
+						w1.batchID = 0;
+						let w2 = JSON.parse(JSON.stringify(addweak2));
+						w2.delay += i * (batchOffset * 4);
+						w2.id += i * 4;
+						w2.batchID = 3;
+						nextOrderID = w2.id + 1;
+						let g = JSON.parse(JSON.stringify(addgrow));
+						g.delay += i * (batchOffset * 4);
+						g.id += i * 4;
+						g.batchID = 3;
+						let h = JSON.parse(JSON.stringify(ord));
+						h.delay += i * (batchOffset * 4);
+						h.id += i * 4;
+						h.batchID = 1;
+						orderBatch.push(w1);
+						orderBatch.push(w2);
+						orderBatch.push(g);
+						orderBatch.push(h);
+					}
+					return Promise.resolve(orderBatch);
+				}
+
+			}
 		}
+		return Promise.resolve(promise);
+
 	}
 	async function UpdateServers() {
 		await ns.run("/scanall.ns");
