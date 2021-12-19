@@ -164,6 +164,7 @@ export async function main(ns) {
 		}
 		
 		var promise = "NO ORDER";
+		let freeRamThreads = getFreeRamThreads();
 		//This is only going to run until it gives an order, it won't execute for every target
 		for (let highTarget of hackableServers) {
 			var anyHighTargetOrder = orderQueue.filter(function (order) {
@@ -244,7 +245,6 @@ export async function main(ns) {
 				nextOrderID++;
 				addweak2.delay = weak2Wait;
 
-				let freeRamThreads = getFreeRamThreads();
 				let maxBatch_freeRam = Math.floor(freeRamThreads / sumThreads);
 				let existingBatch = orderQueue.filter(function (order) {
 					return order.target.name === highTarget.name && order.isBatch && order.batchID === 3;
