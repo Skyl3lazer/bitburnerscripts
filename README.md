@@ -5,6 +5,8 @@ scanall.ns - Scans the tree of servers and puts their data into serverlist.txt (
 
 alphanuke.ns - Nukes all available servers every 30s based on what .exe's are available to you. Stops running once they're all hacked.
 
+stonks.ns - Requires 4s TIX. Buy good stocks, sells bad ones. No manipulation. 
+
 hack/
 
 ..targetfinder.ns - Main script. Analyzes available hackable targets, sends Orders to port 1. Reads ports 2 and 3 for info on accepted orders and completed orders. Also fires off client.ns.
