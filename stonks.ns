@@ -86,7 +86,7 @@ export async function main(ns) {
 					}
 				}
 			} else if (forecast > 0.6) {
-				var sharePrice = ns.stock.getPurchaseCost(item, 1, "L");
+				var sharePrice = ns.stock.getAskPrice(item);
 				var position = sharesNum * sharePrice;
 				//Weight how much to buy based on forecast
 				var adjustedMaxPosition = maxPosition * (1 + (forecast * 0.3));
