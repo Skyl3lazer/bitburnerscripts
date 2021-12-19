@@ -251,6 +251,7 @@ export async function main(ns) {
 					ord.isBatch = false;
 					ord.delay = 0;
 					ord.threads = Math.min(freeRamThreads, threads);
+					ord.neededThreads = ord.threads;
 					nextOrderID++;
 					return Promise.resolve(new Array(ord)); //return the Order object
 				}
