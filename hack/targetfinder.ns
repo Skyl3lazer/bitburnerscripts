@@ -111,7 +111,7 @@ export async function main(ns) {
 					}
 					orderQueue.push(order);
 				}
-				ns.print("Letting those batches process");
+				if (orders.length > 1) { ns.print("Letting those batches process"); }
 				await ns.sleep(50 * orders.length); //Let all those orders get parsed
 			}
 		}
