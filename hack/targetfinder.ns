@@ -97,8 +97,13 @@ export async function main(ns) {
 
 			portData = ns.readPort(3);
 		}
+
+
 		//write a new order
-		let distictTargets = new Set(orderQueue.map(x => x.target.name)).size;
+		let distictTargets = (new Set(orderQueue.filter(order => !order.isBatch).map(a => a.target.name)).size) +
+			(new Set(orderQueue.filter(function (order) {
+				return order.isBatch && order.batchID === 3;
+			}).map(a => a.target.name)).size);
 		if (distictTargets < maxConcurrent) {
 			let orders = await determineOrder();
 			if (orders !== "NO ORDER") {
