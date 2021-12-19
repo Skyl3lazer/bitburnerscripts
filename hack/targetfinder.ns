@@ -100,10 +100,17 @@ export async function main(ns) {
 
 
 		//write a new order
-		let distictTargets = (new Set(orderQueue.filter(order => !order.isBatch).map(a => a.target.name)).size) +
-			(new Set(orderQueue.filter(function (order) {
+		let distictTargets = new Set(orderQueue.filter(order => !order.isBatch).map(a => a.target.name)).size;
+		let orderWithBatch3 = orderQueue.filter(function (order) {
 				return order.isBatch && order.batchID === 3;
-			}).map(a => a.target.name)).size);
+			});
+		let ordersWithMoreThanConcurrentBatch3s = orderWithBatch3
+			.map(a => a.target.name)
+			.filter(name => {
+				return orderWithBatch3.filter(order => order.target.name === name && order.batchID ===3).length >= maxConcurrent;
+			});
+		distictTargets += new Set(ordersWithMoreThanConcurrentBatch3s).size;
+		
 		if (distictTargets < maxConcurrent) {
 			let orders = await determineOrder();
 			if (orders !== "NO ORDER") {
@@ -138,6 +145,7 @@ export async function main(ns) {
 				&& server.hasRoot;
 		})));
 		if (hackableServers.length === 0) {
+			ns.print("No hackables");
 			return Promise.resolve("NO ORDER");
 		}
 		let firstHighScore = 0;
@@ -160,6 +168,7 @@ export async function main(ns) {
 
 		hackableServers.splice(maxConcurrent);
 		if (firstHighTarget.name === undefined) {
+			ns.print("No high score");
 			return Promise.resolve("NO ORDER");
 		}
 		
@@ -174,7 +183,7 @@ export async function main(ns) {
 				return order.target.name === highTarget.name && !order.isBatch;
 			}).length > 0;
 
-			if (highTarget.security > highTarget.minSec + securityThresh && !anyHighTargetNonBatchedOrder) {
+			if (highTarget.security > highTarget.minSec + securityThresh && !anyHighTargetOrder) {
 				type = "w";
 				threads = Math.ceil((highTarget.security - (highTarget.minSec + securityThresh)) / 0.05); //0.05 is a static amount reduced per thread
 
@@ -185,7 +194,7 @@ export async function main(ns) {
 				let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
 				nextOrderID++;
 				return Promise.resolve(new Array(ord)); //return the Order object
-			} else if (highTarget.money <= highTarget.maxMoney * moneyThresh && !anyHighTargetNonBatchedOrder) {
+			} else if (highTarget.money <= highTarget.maxMoney * moneyThresh && !anyHighTargetOrder) {
 				type = "g";
 				threads = Math.ceil(ns.growthAnalyze(highTarget.name, highTarget.maxMoney / highTarget.money));
 
