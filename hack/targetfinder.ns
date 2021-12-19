@@ -28,6 +28,7 @@ export async function main(ns) {
 	var hackThreadThresh = 15000; //Won't run more than this many hack threads at once
 	var batchOffset = 5000;//ms to delay between batches in a hwgw
 	var maxBatchSize = 99;//How many chained hwhw will be placed on each concurrent server at most
+	var namedServerPrefix = "pserv";//The prefix for your custom purchased servers
 	//End Configuration
 
 	var ImportServers;
@@ -313,7 +314,7 @@ export async function main(ns) {
 		await ns.run("/scanall.ns");
 		ImportServers = JSON.parse(ns.read("serverlist.txt"));
 		servers = ImportServers.filter(function (server) {
-			return !exclude.includes(server.name) && !server.name.startsWith("pserv");
+			return !exclude.includes(server.name) && !server.name.startsWith(namedServerPrefix);
 		});
 	}
 	function getFreeRamThreads() {

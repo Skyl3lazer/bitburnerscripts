@@ -46,3 +46,6 @@ Configuration (in targetfinder)
 	//How many chained hwhw will be placed on each concurrent server at most.
 	//If this number is large, you'll basically only hack the most efficient server constantly
 	var maxBatchSize = 99;
+	
+	//The prefix for your custom purchased servers
+	var namedServerPrefix = "pserv";
