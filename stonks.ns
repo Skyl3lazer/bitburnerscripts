@@ -4,7 +4,7 @@ export async function main(ns) {
 
 	//User Settings
 	var investPercent = 0.85; //Percentage of overall networth invested at once (desired). Default 0.85
-	var rebalanceThresh = 1000000000; //Essentially, how much more a position must be worth for you to take profits
+	var rebalanceThresh = 5000000000; //Essentially, how much more a position must be worth for you to take profits
 	var addPositionThresh = 20000000; //How much less than what you want to own you must before buying
 	var initialInvestmentThresh = 500000; //Minimum investment on a new stock. Default 500k
 	//End User Settings
@@ -80,7 +80,7 @@ export async function main(ns) {
 						var soldPosition = ns.stock.getPosition(item);
 						totalWorth -= prices[index] * shares[index];
 						shares[index] = soldPosition[0];
-						prices[index] = salePrice[1];
+						prices[index] = salePrice;
 						purchasePrice[index] = soldPosition[1];
 						totalWorth += prices[index] * shares[index];
 					} else {
@@ -128,7 +128,7 @@ export async function main(ns) {
 						totalWorth -= prices[index] * shares[index];
 						shares[index] = overboughtPosition[0];
 						prices[index] = sharePrice;
-						purchasePrice[index] = boughtPosition[1];
+						purchasePrice[index] = overboughtPosition[1];
 						totalWorth += prices[index] * shares[index];
 						if (shares[index] === 0) {
 							investedStocks--;
