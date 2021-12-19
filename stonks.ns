@@ -52,6 +52,12 @@ export async function main(ns) {
 		ns.print(ns.nFormat(cashOnHand, "$0.000a") + " CoH, " + ns.nFormat(totalWorth, "$0.000a") + " NW, " + ns.nFormat(maxPosition, "$0.000a") + " is our base position");
 		ns.print("Total NW increase since program launch: " + ns.nFormat((totalWorth / initialNW) - 1, "0.00%"));
 		ns.print("-----");
+		ns.print("Positions: ");
+		symbols.forEach((item, index, array) => {
+			if (shares[index] > 0) {
+				ns.print(item + " - " + ns.nFormat(shares[index], "0,0") + " (" + ns.nFormat(prices[index] * shares[index], "$0.000a") + ")");
+			}
+		});
 		symbols.forEach(function (item, index, array) {
 			var forecast = ns.stock.getForecast(item);
 			var sharesNum = shares[index];
