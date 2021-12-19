@@ -4,7 +4,8 @@ export async function main(ns) {
 
 	//User Settings
 	var investPercent = 0.85; //Percentage of overall networth invested at once (desired). Default 0.85
-	var rebalanceThresh = 100000000; //Amount overbought a stock must be before selling some. Default 5mil
+	var rebalanceThresh = 1000000000; //Essentially, how much more a position must be worth for you to take profits
+	var addPositionThresh = 20000000; //How much less than what you want to own you must before buying
 	var initialInvestmentThresh = 500000; //Minimum investment on a new stock. Default 500k
 	//End User Settings
 
@@ -82,7 +83,7 @@ export async function main(ns) {
 				//Weight how much to buy based on forecast
 				var adjustedMaxPosition = maxPosition * (1 + (forecast * 0.3));
 				var diff = Math.floor(adjustedMaxPosition - position);
-				if (diff > initialInvestmentThresh && position < adjustedMaxPosition + (.2 * rebalanceThresh)) {
+				if (diff > initialInvestmentThresh && position < adjustedMaxPosition + addPositionThresh) {
 					var buyPrice = 0;
 					var maxShares = maxStocks[index];
 					var amountBought = 0;
@@ -111,7 +112,7 @@ export async function main(ns) {
 					var overboughtShareAmount = Math.floor(Math.abs(diff / sharePrice));
 					var overboughtSalePrice = ns.stock.sell(item, overboughtShareAmount);
 					if (overboughtSalePrice != 0) {
-						ns.print("Overbought: Sold " + ns.nFormat(overboughtShareAmount, "0,0") + " shares of " + item + " for " + ns.nFormat((overboughtShareAmount * overboughtSalePrice), "$0.000a") + " Forecast: " + ns.nFormat(forecast, "0.000"));
+						ns.print("Overweight (Profit Taking): Sold " + ns.nFormat(overboughtShareAmount, "0,0") + " shares of " + item + " for " + ns.nFormat((overboughtShareAmount * overboughtSalePrice), "$0.000a") + " Forecast: " + ns.nFormat(forecast, "0.000"));
 						var overboughtPosition = ns.stock.getPosition(item);
 						totalWorth -= prices[index] * shares[index];
 						shares[index] = overboughtPosition[0];
