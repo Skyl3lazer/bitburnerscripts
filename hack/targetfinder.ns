@@ -191,7 +191,7 @@ export async function main(ns) {
 					ns.print("Invalid order generated: " + type + " " + highTarget.name);
 					return Promise.resolve("NO ORDER");
 				}
-				let threads = Math.min(threads, Math.floor(freeRamThreads / threads));
+				threads = Math.min(threads, Math.floor(freeRamThreads / threads));
 				let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
 				nextOrderID++;
 				return Promise.resolve(new Array(ord)); //return the Order object
@@ -203,7 +203,7 @@ export async function main(ns) {
 					ns.print("Invalid order generated: " + type + " " + highTarget.name);
 					return Promise.resolve("NO ORDER");
 				}
-				let threads = Math.min(threads, Math.floor(freeRamThreads / threads));
+				threads = Math.min(threads, Math.floor(freeRamThreads / threads));
 				let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
 				nextOrderID++;
 				return Promise.resolve(new Array(ord)); //return the Order object
