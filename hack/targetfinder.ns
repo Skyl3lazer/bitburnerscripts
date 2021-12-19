@@ -129,7 +129,7 @@ export async function main(ns) {
 		let hackableServers = servers.filter(function (server) {
 			return server.hackLevel <= hackLevel
 				&& orderQueue.filter(function (order) {
-					return order.target.name === server.name && order.isBatch;
+					return order.target.name === server.name && order.isBatch && order.batchID === 3;
 				}).length < maxBatchSize
 				&& orderQueue.filter(order => order.target.name === server.name && !order.isBatch).length === 0
 				&& server.hasRoot;
