@@ -299,10 +299,10 @@ export async function main(ns) {
 						h.delay += i * (batchOffset * 4);
 						h.id += i * 4;
 						h.batchID = 0;
-						orderBatch.push(w1);
-						orderBatch.push(w2);
-						orderBatch.push(g);
 						orderBatch.push(h);
+						orderBatch.push(g);
+						orderBatch.push(w2);
+						orderBatch.push(w1);
 					}
 					return Promise.resolve(orderBatch);
 				}
