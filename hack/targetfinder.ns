@@ -24,7 +24,7 @@ export async function main(ns) {
 	var weight_growth = 2000000;
 	var securityThresh = 0; //Don't hack if security is below this threshhold (plus base min)
 	var moneyThresh = .65; //Don't hack if money is below maxMoney * moneyThresh
-	var maxConcurrent = 3; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
+	var maxConcurrent = 4; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
 	var hackThreadThresh = 15000; //Won't run more than this many hack threads at once
 	var batchOffset = 5000;//ms to delay between batches in a hwgw
 	var maxBatchSize = 99;//How many chained hwhw will be placed on each concurrent server at most
@@ -191,6 +191,7 @@ export async function main(ns) {
 					ns.print("Invalid order generated: " + type + " " + highTarget.name);
 					return Promise.resolve("NO ORDER");
 				}
+				let threads = Math.min(threads, Math.floor(freeRamThreads / threads));
 				let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
 				nextOrderID++;
 				return Promise.resolve(new Array(ord)); //return the Order object
@@ -202,6 +203,7 @@ export async function main(ns) {
 					ns.print("Invalid order generated: " + type + " " + highTarget.name);
 					return Promise.resolve("NO ORDER");
 				}
+				let threads = Math.min(threads, Math.floor(freeRamThreads / threads));
 				let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
 				nextOrderID++;
 				return Promise.resolve(new Array(ord)); //return the Order object
@@ -261,7 +263,7 @@ export async function main(ns) {
 				let maxBatch_time = Math.floor(highTarget.weakenTime / (4 * batchOffset));
 				let maxBatch_lesser = Math.min(maxBatch_freeRam, maxBatch_time - existingBatch,
 					maxBatchSize - existingBatch);
-				ns.print("Ram: "+maxBatch_freeRam+" Time: "+(maxBatch_time - existingBatch)+" Size: "+(maxBatchSize - existingBatch) +" Existing: "+existingBatch);
+				//ns.print("Ram: "+maxBatch_freeRam+" Time: "+(maxBatch_time - existingBatch)+" Size: "+(maxBatchSize - existingBatch) +" Existing: "+existingBatch);
 				
 
 				if (maxBatch_lesser <= 0) {
