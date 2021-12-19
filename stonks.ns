@@ -62,7 +62,7 @@ export async function main(ns) {
 					+ " @ " + ns.nFormat(prices[index], "$0,0.00").padStart(12) + ")"
 					+ "  - Bought @ "
 					+ ns.nFormat(purchasePrice[index], "$0,0.00").padStart(10)
-					+ (purchasePrice[index] > prices[index] ? "  ▼ " + ns.nFormat((purchasePrice[index] - prices[index]), "$0.00") : "  ▲ " + ns.nFormat(prices[index] - purchasePrice[index], "$0.00"))
+					+ (purchasePrice[index] > prices[index] ? "  ▼ (" + ns.nFormat((purchasePrice[index] - prices[index]), "$0,0.00") + ")" : "  ▲ " + ns.nFormat(prices[index] - purchasePrice[index], "$0,0.00"))
 				);
 			}
 		});
