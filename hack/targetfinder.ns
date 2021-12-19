@@ -104,7 +104,6 @@ export async function main(ns) {
 			(new Set(orderQueue.filter(function (order) {
 				return order.isBatch && order.batchID === 3;
 			}).map(a => a.target.name)).size);
-			ns.tprint("Distinct: "+distictTargets);
 		if (distictTargets < maxConcurrent) {
 			let orders = await determineOrder();
 			if (orders !== "NO ORDER") {
@@ -253,6 +252,8 @@ export async function main(ns) {
 				let maxBatch_time = Math.floor(highTarget.weakenTime / (4 * batchOffset));
 				let maxBatch_lesser = Math.min(maxBatch_freeRam, maxBatch_time - existingBatch,
 					maxBatchSize - existingBatch);
+				ns.print("Ram: "+maxBatch_freeRam+"Time: "+maxBatch_time - existingBatch+"Size: "+maxBatchSize - existingBatch);
+				
 
 				if (maxBatch_lesser <= 0) {
 					nextOrderID = startOrderID;
