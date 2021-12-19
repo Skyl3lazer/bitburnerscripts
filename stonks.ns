@@ -55,7 +55,7 @@ export async function main(ns) {
 		ns.print("Positions: ");
 		symbols.forEach((item, index, array) => {
 			if (shares[index] > 0) {
-				ns.print(item + " - " + ns.nFormat(shares[index], "0,0") + " (" + ns.nFormat(prices[index] * shares[index], "$0.000a") + ")");
+				ns.print(item.padEnd(6) + ns.nFormat(shares[index], "0,0").padStart(14) + "  (" + ns.nFormat(prices[index] * shares[index], "$0.000a") + ")");
 			}
 		});
 		symbols.forEach(function (item, index, array) {
