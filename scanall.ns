@@ -4,14 +4,13 @@ export async function main(ns) {
 
 	var maxDepth = 15;
 
-	var depthOneServers = ns.scan("home");
+	
 	var completedServers = [];//["home"];
-	var hasChildServers = depthOneServers.length > 0 ? true : false;
-	var serverIterator = depthOneServers;
+	var hasChildServers = true;
+	var serverIterator = ["home"];
 	var currentDepth = 0;
 	var servers = [];
 
-	ns.print(depthOneServers.length + " servers Depth 0");
 
 	while (currentDepth < maxDepth && hasChildServers) {
 		var childServers = [];

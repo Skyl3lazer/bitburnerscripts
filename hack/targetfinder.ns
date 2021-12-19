@@ -6,6 +6,7 @@ export async function main(ns) {
 	ns.disableLog("getServerMoneyAvailable");
 	ns.disableLog("getServerSecurityLevel");
 	ns.disableLog("run");
+	ns.disableLog("getServerUsedRam");
 	ns.tail();
 	/*
 	Port Mapping:
@@ -25,8 +26,8 @@ export async function main(ns) {
 	var moneyThresh = .65; //Don't hack if money is below maxMoney * moneyThresh
 	var maxConcurrent = 3; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
 	var hackThreadThresh = 15000; //Won't run more than this many hack threads at once
-	var batchOffset = 5000;//ms to delay between batches in a hwgw
-	var batchSize = 3;//How many chained hwhw will be placed on each concurrent server (making this too big would maybe cause problems)
+	var batchOffset = 2500;//ms to delay between batches in a hwgw
+	var maxBatchSize = 99;//How many chained hwhw will be placed on each concurrent server at most
 	//End Configuration
 
 	var ImportServers;
@@ -35,6 +36,9 @@ export async function main(ns) {
 	var totalweight = weight_maxMoney + weight_growth;
 	weight_maxMoney /= totalweight;
 	weight_growth /= totalweight;
+	var hackSize = 1.7;
+	var weakenSize = 1.75;
+	var growSize = 1.75;
 
 	//filter unwanted servers
 	var servers;
@@ -45,6 +49,7 @@ export async function main(ns) {
 
 	//main loop
 	while (true) {
+
 		//read any order acceptance squaks
 		let portData = ns.readPort(2);
 		while (portData !== "NULL PORT DATA") {
@@ -106,6 +111,7 @@ export async function main(ns) {
 					}
 					orderQueue.push(order);
 				}
+				await ns.sleep(250 * orders.length); //Let all those orders get parsed
 			}
 		}
 		await ns.write("orderqueue.txt", JSON.stringify(orderQueue), "w");
@@ -113,16 +119,19 @@ export async function main(ns) {
 		servers = ImportServers.filter(function (server) {
 			return !exclude.includes(server.name) && !server.name.startsWith("pserv");
 		});
-		await ns.sleep(1000);
+		await ns.sleep(3000);
 	}
 
 	//Determine the order to send next
 	async function determineOrder() {
 		let hackLevel = ns.getHackingLevel();
 		let hackableServers = servers.filter(function (server) {
-			return server.hackLevel <= hackLevel && orderQueue.every(function (order) {
-				return order.target.name !== server.name;
-			}) && server.hasRoot;
+			return server.hackLevel <= hackLevel
+				&& orderQueue.filter(function (order) {
+					return order.target.name === server.name && order.isBatch;
+				}).length < maxBatchSize
+				&& orderQueue.filter(order => order.target.name === server.name && !order.isBatch).length === 0
+				&& server.hasRoot;
 		});
 		if (hackableServers.length === 0) {
 			return Promise.resolve("NO ORDER");
@@ -186,28 +195,48 @@ export async function main(ns) {
 			let growWait = Math.ceil(batchOffset + highTarget.weakenTime - highTarget.growTime);
 			let weak2Wait = Math.ceil(batchOffset * 2);
 
+			var sumThreads = threads;
+
 			let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
+			ord.isBatch = true;
 			nextOrderID++;
 			ord.delay = hackWait;
 
 			let calcThreads = 0;
 			//add weak1
 			calcThreads = Math.ceil((0.002 * threads) / 0.05);
+			sumThreads += calcThreads;
 			let addweak1 = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "w");
+			addweak1.isBatch = true;
 			nextOrderID++;
 			//add grow
 			calcThreads = Math.ceil(ns.growthAnalyze(highTarget.name,
 				highTarget.maxMoney / (highTarget.money - (ns.hackAnalyze(highTarget.name) * threads * highTarget.money))));
+			sumThreads += calcThreads;
 			let addgrow = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "g");
+			addgrow.isBatch = true;
 			nextOrderID++;
 			addgrow.delay = growWait;
 			//add weak2
 			calcThreads = Math.ceil((0.004 * calcThreads) / 0.05);
+			sumThreads += calcThreads;
 			let addweak2 = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "w");
+			addweak2.isBatch = true;
 			nextOrderID++;
 			addweak2.delay = weak2Wait;
 
-			for (let i = 0; i < batchSize; i++) {
+			let freeRamThreads = getFreeRamThreads();
+			let maxBatch_freeRam = Math.floor(freeRamThreads / sumThreads);
+			let existingBatch = orderQueue.filter(function (order) {
+				return order.target.name === highTarget.name && order.isBatch;
+			}).length;
+			ns.tprint("FreeRam Threads: " + freeRamThreads + " SumThreads: " + sumThreads);
+			let maxBatch_time = Math.floor(highTarget.weakenTime / (4 * batchOffset));
+			let maxBatch_lesser = Math.min(maxBatch_freeRam, maxBatch_time - existingBatch,
+				maxBatchSize - existingBatch);
+			ns.tprint("ram max: " + maxBatch_freeRam + " time max: " + maxBatch_time + " config max remaining: " + (maxBatchSize - existingBatch) + " least: " + maxBatch_lesser);
+
+			for (let i = 0; i < maxBatch_lesser; i++) {
 				let w1 = JSON.parse(JSON.stringify(addweak1));
 				w1.delay += i * (batchOffset * 4);
 				w1.id += i * 4;
@@ -231,7 +260,6 @@ export async function main(ns) {
 				orderBatch.push(h);
 			}
 
-
 			return Promise.resolve(orderBatch);
 		}
 	}
@@ -241,6 +269,13 @@ export async function main(ns) {
 		servers = ImportServers.filter(function (server) {
 			return !exclude.includes(server.name) && !server.name.startsWith("pserv");
 		});
+	}
+	function getFreeRamThreads() {
+		return ImportServers.filter(function (server) {
+			return server.hasRoot && server.maxRam > 0;
+		})
+			.map(server => Math.floor((server.maxRam - (server.name === "home" ? 64 : 0) - ns.getServerUsedRam(server.name)) / weakenSize))
+			.reduce((p, c) => p + c);
 	}
 }
 export class Order {
@@ -252,6 +287,7 @@ export class Order {
 	neededThreads = 0;
 	delay = 0;
 	batchID = 0;
+	isBatch = false;
 	constructor(cid, ctarget, cthreads, csecThresh, ctype) {
 		this.id = cid;
 		this.target = ctarget;
