@@ -228,7 +228,7 @@ export async function main(ns) {
 			let freeRamThreads = getFreeRamThreads();
 			let maxBatch_freeRam = Math.floor(freeRamThreads / sumThreads);
 			let existingBatch = orderQueue.filter(function (order) {
-				return order.target.name === highTarget.name && order.isBatch;
+				return order.target.name === highTarget.name && order.isBatch && order.batchID === 3;
 			}).length;
 			let maxBatch_time = Math.floor(highTarget.weakenTime / (4 * batchOffset));
 			let maxBatch_lesser = Math.min(maxBatch_freeRam, maxBatch_time - existingBatch,
