@@ -47,7 +47,6 @@ export async function main(ns) {
 
 		var maxPosition = (totalWorth * investPercent) * stockInvestmentRatio;
 		ns.clearLog();
-		ns.print("-----");
 		ns.print(investedStocks + " stocks currently invested in, " + ns.nFormat(stockInvestmentRatio, "(0.00%)") + " NW per-stock ratio.");
 		ns.print(ns.nFormat(cashOnHand, "$0.000a") + " CoH, " + ns.nFormat(totalWorth, "$0.000a") + " NW, " + ns.nFormat(maxPosition, "$0.000a") + " is our base position");
 		ns.print("Total NW increase since program launch: " + ns.nFormat((totalWorth / initialNW) - 1, "0.00%"));
@@ -58,6 +57,7 @@ export async function main(ns) {
 				ns.print(item.padEnd(6) + ns.nFormat(shares[index], "0,0").padStart(14) + "  (" + ns.nFormat(prices[index] * shares[index], "$0.000a").padEnd(10) + " @ "+ns.nFormat(prices[index],"$0,0.00").padStart(12)+")");
 			}
 		});
+		ns.print("-----");
 		symbols.forEach(function (item, index, array) {
 			var forecast = ns.stock.getForecast(item);
 			var sharesNum = shares[index];
