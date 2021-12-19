@@ -201,7 +201,7 @@ export async function main(ns) {
 				return Promise.resolve(new Array(ord)); //return the Order object
 			} else if (highTarget.money <= highTarget.maxMoney * moneyThresh && !anyHighTargetOrder) {
 				type = "g";
-				threads = Math.ceil(ns.growthAnalyze(highTarget.name, highTarget.maxMoney / highTarget.money));
+				threads = Math.ceil(ns.growthAnalyze(highTarget.name, highTarget.maxMoney / Math.max(highTarget.money, 1)));
 
 				if (threads <= 0) {
 					return Promise.resolve("NO ORDER");
