@@ -218,7 +218,6 @@ export async function main(ns) {
 				}
 
 				if (threads <= 0) {
-					ns.print("Invalid order generated: " + type + " " + highTarget.name);
 					return Promise.resolve("NO ORDER");
 				}
 
@@ -243,7 +242,7 @@ export async function main(ns) {
 				addweak1.isBatch = true;
 				nextOrderID++;
 				//add grow
-				calcThreads = Math.ceil(ns.growthAnalyze(highTarget.name,
+				calcThreads = Math.ceil(1.05 * ns.growthAnalyze(highTarget.name,
 					highTarget.maxMoney / (highTarget.money - (ns.hackAnalyze(highTarget.name) * threads * highTarget.money))));
 				sumThreads += calcThreads;
 				let addgrow = new Order(nextOrderID, highTarget, calcThreads, highTarget.minSec + securityThresh, "g");
