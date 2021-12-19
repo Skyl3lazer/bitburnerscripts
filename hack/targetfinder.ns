@@ -116,8 +116,10 @@ export async function main(ns) {
 					}
 					orderQueue.push(order);
 				}
-				if (orders.length > 1) { ns.print("Letting those batches process"); }
-				await ns.sleep(50 * orders.length); //Let all those orders get parsed
+				if (orders.length > 1) {
+					ns.print("Letting those batches process");
+					await ns.sleep(50 * orders.length); //Let all those orders get parsed
+				}
 			}
 		}
 		await ns.write("orderqueue.txt", JSON.stringify(orderQueue), "w");
@@ -202,7 +204,7 @@ export async function main(ns) {
 			let weak2Wait = Math.ceil(batchOffset * 2);
 
 			var sumThreads = threads;
-
+			let startOrderID = nextOrderID;
 			let ord = new Order(nextOrderID, highTarget, threads, highTarget.minSec + securityThresh, type);
 			ord.isBatch = true;
 			nextOrderID++;
@@ -240,28 +242,39 @@ export async function main(ns) {
 			let maxBatch_lesser = Math.min(maxBatch_freeRam, maxBatch_time - existingBatch,
 				maxBatchSize - existingBatch);
 
-			for (let i = 0; i < maxBatch_lesser; i++) {
-				let w1 = JSON.parse(JSON.stringify(addweak1));
-				w1.delay += i * (batchOffset * 4);
-				w1.id += i * 4;
-				w1.batchID = i;
-				let w2 = JSON.parse(JSON.stringify(addweak2));
-				w2.delay += i * (batchOffset * 4);
-				w2.id += i * 4;
-				w2.batchID = i;
-				nextOrderID = w2.id + 1;
-				let g = JSON.parse(JSON.stringify(addgrow));
-				g.delay += i * (batchOffset * 4);
-				g.id += i * 4;
-				g.batchID = i;
-				let h = JSON.parse(JSON.stringify(ord));
-				h.delay += i * (batchOffset * 4);
-				h.id += i * 4;
-				h.batchID = i;
-				orderBatch.push(w1);
-				orderBatch.push(w2);
-				orderBatch.push(g);
-				orderBatch.push(h);
+			if (maxBatch_lesser <= 0) {
+				nextOrderID = startOrderID;
+				if (freeRamThreads > 0) {
+					ord.isBatch = false;
+					ord.delay = 0;
+					ord.threads = Math.min(freeRamThreads, threads);
+					nextOrderID++;
+					return Promise.resolve(new Array(ord)); //return the Order object
+				}
+			} else {
+				for (let i = 0; i < maxBatch_lesser; i++) {
+					let w1 = JSON.parse(JSON.stringify(addweak1));
+					w1.delay += i * (batchOffset * 4);
+					w1.id += i * 4;
+					w1.batchID = i;
+					let w2 = JSON.parse(JSON.stringify(addweak2));
+					w2.delay += i * (batchOffset * 4);
+					w2.id += i * 4;
+					w2.batchID = i;
+					nextOrderID = w2.id + 1;
+					let g = JSON.parse(JSON.stringify(addgrow));
+					g.delay += i * (batchOffset * 4);
+					g.id += i * 4;
+					g.batchID = i;
+					let h = JSON.parse(JSON.stringify(ord));
+					h.delay += i * (batchOffset * 4);
+					h.id += i * 4;
+					h.batchID = i;
+					orderBatch.push(w1);
+					orderBatch.push(w2);
+					orderBatch.push(g);
+					orderBatch.push(h);
+				}
 			}
 
 			return Promise.resolve(orderBatch);
