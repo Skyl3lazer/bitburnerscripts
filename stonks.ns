@@ -25,7 +25,8 @@ export async function main(ns) {
 	for (let i = 0; i < symbols.length; i = i + 1) {
 		let position = ns.stock.getPosition(symbols[i]);
 		shares.push(position[0]);
-		prices.push(position[1]);
+		prices.push(ns.stock.getAskPrice(symbols[i]));
+		purchasePrice.push(position[1]);
 		maxStocks.push(ns.stock.getMaxShares(symbols[i]));
 		totalWorth += position[0] * position[1];
 		if (position[0] > 0) {
@@ -79,7 +80,8 @@ export async function main(ns) {
 						var soldPosition = ns.stock.getPosition(item);
 						totalWorth -= prices[index] * shares[index];
 						shares[index] = soldPosition[0];
-						prices[index] = soldPosition[1];
+						prices[index] = salePrice[1];
+						purchasePrice[index] = soldPosition[1];
 						totalWorth += prices[index] * shares[index];
 					} else {
 						ns.print("Selling " + item + " reported unsuccessful sale?");
@@ -107,20 +109,11 @@ export async function main(ns) {
 							var boughtPosition = ns.stock.getPosition(item);
 							if (shares[index] === 0) {
 								investedStocks++;
-								purchasePrice[index] = boughtPosition[1];
-							} else {
-								let newTotal = boughtPosition[0];
-								let basisExisting = (shares[index] / newTotal) * purchasePrice[index];
-								let basisNew = ((newTotal - shares[index]) / newTotal) * boughtPosition[1];
-								if (purchasePrice[index] > 0) {
-									purchasePrice[index] = basisNew + basisExisting;
-								} else {
-									purchasePrice[index] = boughtPosition[1];
-								}
 							}
+							purchasePrice[index] = boughtPosition[1];
 							totalWorth -= prices[index] * shares[index];
 							shares[index] = boughtPosition[0];
-							prices[index] = boughtPosition[1];
+							prices[index] = sharePrice;
 							totalWorth += prices[index] * shares[index];
 						} else {
 							ns.print("Could not buy " + item);
@@ -134,7 +127,8 @@ export async function main(ns) {
 						var overboughtPosition = ns.stock.getPosition(item);
 						totalWorth -= prices[index] * shares[index];
 						shares[index] = overboughtPosition[0];
-						prices[index] = overboughtPosition[1];
+						prices[index] = sharePrice;
+						purchasePrice[index] = boughtPosition[1];
 						totalWorth += prices[index] * shares[index];
 						if (shares[index] === 0) {
 							investedStocks--;
