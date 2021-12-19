@@ -252,6 +252,7 @@ export async function main(ns) {
 				let maxBatch_time = Math.floor(highTarget.weakenTime / (4 * batchOffset));
 				let maxBatch_lesser = Math.min(maxBatch_freeRam, maxBatch_time - existingBatch,
 					maxBatchSize - existingBatch);
+				ns.print("Ram: "+maxBatch_freeRam+" Time: "+(maxBatch_time - existingBatch)+" Size: "+(maxBatchSize - existingBatch) +" Existing: "+existingBatch);
 				
 
 				if (maxBatch_lesser <= 0) {
@@ -269,7 +270,7 @@ export async function main(ns) {
 						let w1 = JSON.parse(JSON.stringify(addweak1));
 						w1.delay += i * (batchOffset * 4);
 						w1.id += i * 4;
-						w1.batchID = 0;
+						w1.batchID = 1;
 						let w2 = JSON.parse(JSON.stringify(addweak2));
 						w2.delay += i * (batchOffset * 4);
 						w2.id += i * 4;
@@ -278,11 +279,11 @@ export async function main(ns) {
 						let g = JSON.parse(JSON.stringify(addgrow));
 						g.delay += i * (batchOffset * 4);
 						g.id += i * 4;
-						g.batchID = 3;
+						g.batchID = 2;
 						let h = JSON.parse(JSON.stringify(ord));
 						h.delay += i * (batchOffset * 4);
 						h.id += i * 4;
-						h.batchID = 1;
+						h.batchID = 0;
 						orderBatch.push(w1);
 						orderBatch.push(w2);
 						orderBatch.push(g);
