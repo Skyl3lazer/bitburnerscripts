@@ -230,11 +230,9 @@ export async function main(ns) {
 			let existingBatch = orderQueue.filter(function (order) {
 				return order.target.name === highTarget.name && order.isBatch;
 			}).length;
-			ns.tprint("FreeRam Threads: " + freeRamThreads + " SumThreads: " + sumThreads);
 			let maxBatch_time = Math.floor(highTarget.weakenTime / (4 * batchOffset));
 			let maxBatch_lesser = Math.min(maxBatch_freeRam, maxBatch_time - existingBatch,
 				maxBatchSize - existingBatch);
-			ns.tprint("ram max: " + maxBatch_freeRam + " time max: " + maxBatch_time + " config max remaining: " + (maxBatchSize - existingBatch) + " least: " + maxBatch_lesser);
 
 			for (let i = 0; i < maxBatch_lesser; i++) {
 				let w1 = JSON.parse(JSON.stringify(addweak1));
