@@ -16,6 +16,7 @@ export async function main(ns) {
 	var shares = [];
 	var prices = [];
 	var maxStocks = [];
+	var purchasePrice = [];
 	var totalWorth = 0;
 	var lastCoH = 0;
 	var initialNW = 0;
@@ -55,7 +56,14 @@ export async function main(ns) {
 		ns.print("Positions: ");
 		symbols.forEach((item, index, array) => {
 			if (shares[index] > 0) {
-				ns.print(item.padEnd(6) + ns.nFormat(prices[index] * shares[index], "$0.000a").padStart(10) + "  (" + ns.nFormat(shares[index], "0,0").padEnd(10) + " @ " + ns.nFormat(prices[index], "$0,0.00").padStart(12) + ")");
+				ns.print(item.padEnd(6)
+					+ ns.nFormat(prices[index] * shares[index], "$0.000a").padStart(10)
+					+ "  (" + ns.nFormat(shares[index], "0,0").padEnd(10)
+					+ " @ " + ns.nFormat(prices[index], "$0,0.00").padStart(12) + ")"
+					+ "  - Bought @ "
+					+ ns.nFormat(purchasePrice[index], "$0,0.00").padStart(10)
+					+ (purchasePrice[index] > prices[index] ? "  ▼ " + ns.nFormat((purchasePrice[index] - prices[index]), "$0.00") : "  ▲ " + ns.nFormat(prices[index] - purchasePrice[index], "$0.00"))
+				);
 			}
 		});
 		ns.print("-----");
@@ -78,7 +86,7 @@ export async function main(ns) {
 					}
 				}
 			} else if (forecast > 0.6) {
-				var sharePrice = ns.stock.getPurchaseCost(item, 1, "L") - 100000;
+				var sharePrice = ns.stock.getPurchaseCost(item, 1, "L");
 				var position = sharesNum * sharePrice;
 				//Weight how much to buy based on forecast
 				var adjustedMaxPosition = maxPosition * (1 + (forecast * 0.3));
@@ -96,10 +104,20 @@ export async function main(ns) {
 						buyPrice = ns.stock.buy(item, amountBought);
 						if (buyPrice != 0) {
 							ns.print("Bought " + ns.nFormat(amountBought, "0,0") + " shares of " + item + " for " + ns.nFormat((amountBought * buyPrice), "$0.000a") + " Forecast: " + ns.nFormat(forecast, "0.000"));
+							var boughtPosition = ns.stock.getPosition(item);
 							if (shares[index] === 0) {
 								investedStocks++;
+								purchasePrice[index] = boughtPosition[1];
+							} else {
+								let newTotal = boughtPosition[0];
+								let basisExisting = (shares[index] / newTotal) * purchasePrice[index];
+								let basisNew = ((newTotal - shares[index]) / newTotal) * boughtPosition[1];
+								if (purchasePrice[index] > 0) {
+									purchasePrice[index] = basisNew + basisExisting;
+								} else {
+									purchasePrice[index] = boughtPosition[1];
+								}
 							}
-							var boughtPosition = ns.stock.getPosition(item);
 							totalWorth -= prices[index] * shares[index];
 							shares[index] = boughtPosition[0];
 							prices[index] = boughtPosition[1];
