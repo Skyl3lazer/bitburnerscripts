@@ -318,11 +318,11 @@ export async function main(ns) {
 		});
 	}
 	function getFreeRamThreads() {
-		return ImportServers.filter(function (server) {
+		return Math.max(ImportServers.filter(function (server) {
 			return server.hasRoot && server.maxRam > 0;
 		})
 			.map(server => Math.floor((server.maxRam - (server.name === "home" ? 64 : 0) - ns.getServerUsedRam(server.name)) / weakenSize))
-			.reduce((p, c) => p + c);
+			.reduce((p, c) => p + c),0);
 	}
 }
 export class Order {
