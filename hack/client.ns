@@ -1,5 +1,6 @@
 /** @param {NS} ns **/
-//todo: make it pick up new servers as I get them
+
+import { SkySettings } from "skyconfig.ns";
 export async function main(ns) {
     ns.disableLog("ALL");
     /*
@@ -17,6 +18,7 @@ export async function main(ns) {
     var output = ns.getPortHandle(3);
     var tasks = new Array();
     var fudge = 0;
+    var saveHomeRam = SkySettings.saveHomeRam;
 
     //script sizes
     let hackSize = 1.7;
@@ -42,7 +44,7 @@ export async function main(ns) {
         for (let host of myServers) {
             host.freemem = host.maxRam - ns.getServerUsedRam(host.name);
             if (host.name === "home") {
-                host.freemem -= 64;
+                host.freemem -= saveHomeRam;
             }
             if (neededThreads === 0) {
                 break;

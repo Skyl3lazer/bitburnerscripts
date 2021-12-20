@@ -7,6 +7,8 @@ alphanuke.ns - Nukes all available servers every 30s based on what .exe's are av
 
 stonks.ns - Requires 4s TIX. Buy good stocks, sells bad ones. No manipulation. 
 
+skysettings.ns - Configuration settings
+
 hack/
 
 ..targetfinder.ns - Main script. Analyzes available hackable targets, sends Orders to port 1. Reads ports 2 and 3 for info on accepted orders and completed orders. Also fires off client.ns.
@@ -17,7 +19,7 @@ hack/
 
 ..hack.ns - Basic hack script, with configurable toasts
 
-Configuration (in targetfinder)
+Configuration (in skysettings)
 
 	//Servers you never want to hack
 	var exclude = ["home", "n00dles", "darkweb", "CSEC", "avmnite-02h", "I.I.I.I", "run4theh111z", ".", "The-Cave"];

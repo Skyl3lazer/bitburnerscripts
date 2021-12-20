@@ -1,5 +1,6 @@
 /** @param {NS} ns **/
 import { Server } from "scanall.ns"
+import { SkySettings } from "skyconfig.ns";
 export async function main(ns) {
 	ns.disableLog("sleep");
 	ns.disableLog("getHackingLevel");
@@ -19,16 +20,17 @@ export async function main(ns) {
 	ns.clearPort(3);
 	ns.run("/hack/client.ns");
 	//Configuration
-	var exclude = ["home", "n00dles", "darkweb", "CSEC", "avmnite-02h", "I.I.I.I", "run4theh111z", ".", "The-Cave"];
-	var weight_maxMoney = 10;
-	var weight_growth = 2000000;
-	var securityThresh = 0; //Don't hack if security is below this threshhold (plus base min)
-	var moneyThresh = .65; //Don't hack if money is below maxMoney * moneyThresh
-	var maxConcurrent = 4; //Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
-	var hackThreadThresh = 15000; //Won't run more than this many hack threads at once
-	var batchOffset = 5000;//ms to delay between batches in a hwgw
-	var maxBatchSize = 99;//How many chained hwhw will be placed on each concurrent server at most
-	var namedServerPrefix = "pserv";//The prefix for your custom purchased servers
+	var exclude = SkySettings.exclude;
+	var weight_maxMoney = SkySettings.weight_maxMoney;
+	var weight_growth = SkySettings.weight_growth;
+	var securityThresh = SkySettings.securityThresh;
+	var moneyThresh = SkySettings.moneyThresh;
+	var maxConcurrent = SkySettings.maxConcurrent;
+	var hackThreadThresh = SkySettings.hackThreadThresh;
+	var batchOffset = SkySettings.batchOffset;
+	var maxBatchSize = SkySettings.maxBatchSize;
+	var namedServerPrefix = SkySettings.namedServerPrefix;
+	var saveHomeRam = SkySettings.saveHomeRam;
 	//End Configuration
 
 	var ImportServers;
@@ -321,8 +323,8 @@ export async function main(ns) {
 		return Math.max(ImportServers.filter(function (server) {
 			return server.hasRoot && server.maxRam > 0;
 		})
-			.map(server => Math.floor((server.maxRam - (server.name === "home" ? 64 : 0) - ns.getServerUsedRam(server.name)) / weakenSize))
-			.reduce((p, c) => p + c),0);
+			.map(server => Math.floor((server.maxRam - (server.name === "home" ? saveHomeRam : 0) - ns.getServerUsedRam(server.name)) / weakenSize))
+			.reduce((p, c) => p + c), 0);
 	}
 }
 export class Order {
