@@ -38,8 +38,8 @@ export async function main(ns) {
 		ns.print("Sleeping 30s");
 		if (changed) {
 			await ns.write("serverlist.txt", JSON.stringify(ImportServers));
-			kill("/hack/targetfinder.ns", "home");
-			run("/hack/targetfinder.ns");
+			ns.kill("/hack/targetfinder.ns", "home");
+			ns.run("/hack/targetfinder.ns");
 		}
 		await ns.sleep(30000);
 	}
