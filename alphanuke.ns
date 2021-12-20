@@ -37,7 +37,7 @@ export async function main(ns) {
 		});
 		ns.print("Sleeping 30s");
 		if (changed) {
-			await ns.write("serverlist.txt", JSON.stringify(ImportServers));
+			await ns.write("serverlist.txt", JSON.stringify(ImportServers), "w");
 			ns.kill("/hack/targetfinder.ns", "home");
 			ns.run("/hack/targetfinder.ns");
 		}
