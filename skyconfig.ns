@@ -1,16 +1,21 @@
 export const SkySettings = {
 	//Servers to not ever try to hack
 	exclude: ["home", "n00dles", "darkweb", "CSEC", "avmnite-02h", "I.I.I.I", "run4theh111z", ".", "The-Cave"],
+
+	//Weights are calculated like this
+	//(((weight_maxMoney / server.maxMoney) * server.maxMoney) + server.maxMoney) * ((server.growth / 1000) * weight_growth)
+	
 	//How much weight you put on maxMoney. More = more weight.
-	weight_maxMoney: 10,
+	weight_maxMoney: 1,
 	//How much weight you put on growth. More = more weight.
-	weight_growth: 2000000,
+	weight_growth: 1500,
+	
 	//Don't hack if security is below this threshhold (plus base min)
 	securityThresh: 0,
 	//Don't hack if money is below maxMoney * moneyThresh
 	moneyThresh: .65,
 	//Maximum amount of servers you want to concurrently be trying to hack (starting with most efficient)
-	maxConcurrent: 4,
+	maxConcurrent: 3,
 	//Won't run more than this many hack threads at once
 	hackThreadThresh: 15000,
 	//ms to delay between batches in a hwgw

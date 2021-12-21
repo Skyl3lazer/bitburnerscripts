@@ -1,6 +1,8 @@
 # bitburnerscripts
 Scripts for BitBurner (Now on steam!)
 
+Important: The way weights work has changed! The default values are closer to where you want to be, you might want to update your weights.
+
 scanall.ns - Scans the tree of servers and puts their data into serverlist.txt (this will be used as a pseudo DB)
 
 alphanuke.ns - Nukes all available servers every 30s based on what .exe's are available to you. Stops running once they're all hacked.
@@ -25,10 +27,9 @@ Configuration (in skysettings)
 	var exclude = ["home", "n00dles", "darkweb", "CSEC", "avmnite-02h", "I.I.I.I", "run4theh111z", ".", "The-Cave"];
 	
 	//How much weight you put on maxMoney. More = more weight.
-	var weight_maxMoney = 10;
-	
+	weight_maxMoney: 1,
 	//How much weight you put on growth. More = more weight.
-	var weight_growth = 2000000;
+	weight_growth: 1500,
 	
 	//Don't hack if security is below this threshhold (plus base min)
 	var securityThresh = 0; 
@@ -51,3 +52,6 @@ Configuration (in skysettings)
 	
 	//The prefix for your custom purchased servers
 	var namedServerPrefix = "pserv";
+	
+	//Won't fill this many gb of ram on home, so you have a bit of free room to play with
+	saveHomeRam: 64
