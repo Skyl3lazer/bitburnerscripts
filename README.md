@@ -21,7 +21,7 @@ hack/
 
 ..hack.ns - Basic hack script, with configurable toasts
 
-Configuration (in skysettings)
+Configuration (in skyconfig)
 
 	//Servers you never want to hack
 	var exclude = ["home", "n00dles", "darkweb", "CSEC", "avmnite-02h", "I.I.I.I", "run4theh111z", ".", "The-Cave"];
