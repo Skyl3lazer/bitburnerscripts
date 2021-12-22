@@ -26,6 +26,9 @@ Configuration (in skyconfig)
 	//Servers you never want to hack
 	var exclude = ["home", "n00dles", "darkweb", "CSEC", "avmnite-02h", "I.I.I.I", "run4theh111z", ".", "The-Cave"];
 	
+	//Server priority scores are calculated like this
+	//(((weight_maxMoney / server.maxMoney) * server.maxMoney) + server.maxMoney) * ((server.growth / 1000) * weight_growth)
+	
 	//How much weight you put on maxMoney. More = more weight.
 	weight_maxMoney: 1,
 	//How much weight you put on growth. More = more weight.
