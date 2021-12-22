@@ -2,7 +2,7 @@ export const SkySettings = {
 	//Servers to not ever try to hack
 	exclude: ["home", "n00dles", "darkweb", "CSEC", "avmnite-02h", "I.I.I.I", "run4theh111z", ".", "The-Cave"],
 
-	//Weights are calculated like this
+	//Server priority scores are calculated like this
 	//(((weight_maxMoney / server.maxMoney) * server.maxMoney) + server.maxMoney) * ((server.growth / 1000) * weight_growth)
 	
 	//How much weight you put on maxMoney. More = more weight.
